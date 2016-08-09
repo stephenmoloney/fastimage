@@ -30,8 +30,9 @@ defmodule Fastimage do
 
 
   @doc ~S"""
-  Returns the dimensions of the image as a map of the form %{width: w, height: h}. Supports "bmp", "gif", "jpeg"
-   or "png" image files only.
+  Returns the dimensions of the image as a map in the form `%{width: _w, height: _h}`. Supports "bmp", "gif", "jpeg"
+  or "png" image files only.
+  Returns :unknown_type if the image file type is not supported.
   """
   @spec size(url_or_file :: String.t) :: map | :unknown_type
   def size(url_or_file) do
