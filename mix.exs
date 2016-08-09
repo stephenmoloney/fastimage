@@ -46,7 +46,7 @@ defmodule Fastimage.Mixfile do
       licenses: ["MIT"],
       maintainers: @maintainers,
       links: %{ "GitHub" => @source},
-      files: ~w(priv bench lib mix.exs README* LICENSE* CHANGELOG*)
+      files: ~w(priv bench lib mix.exs README* LICENCE* CHANGELOG*)
      }
   end
 
