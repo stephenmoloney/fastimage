@@ -7,3 +7,4 @@ erl_crash.dump
 bench/snapshots/
 .idea
 .notes
+doc
