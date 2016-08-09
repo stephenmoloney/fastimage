@@ -1,4 +1,4 @@
-# Fastimage
+# Fastimage [![Build Status](https://travis-ci.org/stephenmoloney/fastimage.svg)](https://travis-ci.org/stephenmoloney/fastimage) [![Hex Version](http://img.shields.io/hexpm/v/fastimage.svg?style=flat)](https://hex.pm/packages/fastimage) [![Hex docs](http://img.shields.io/badge/hex.pm-docs-green.svg?style=flat)](https://hexdocs.pm/fastimage)
 
 
 ## Description
