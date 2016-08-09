@@ -1,0 +1,9 @@
+/_build
+/cover
+/deps
+erl_crash.dump
+*.ez
+/config/dev.exs
+bench/snapshots/
+.idea
+.notes
