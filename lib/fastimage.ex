@@ -142,8 +142,8 @@ defmodule Fastimage do
   def parse_jpeg(stream_ref, {acc_num_chunks, acc_data}, next_data, num_chunks_to_fetch, chunk_size, state \\ :initial) do
 
     if :erlang.byte_size(next_data) < 4 do # get more data if less that 4 bytes remaining
-      num_chunks_to_fetch = acc_num_chunks + 2
-      parse_jpeg_with_more_data(stream_ref, {acc_num_chunks, acc_data}, next_data, num_chunks_to_fetch, chunk_size, state)
+      new_num_chunks_to_fetch = acc_num_chunks + 2
+      parse_jpeg_with_more_data(stream_ref, {acc_num_chunks, acc_data}, next_data, new_num_chunks_to_fetch, chunk_size, state)
     end
 
     case state do
