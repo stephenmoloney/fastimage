@@ -6,6 +6,7 @@ defmodule FastimageTest do
   @png_url "https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.png"
   @gif_url "https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.gif"
   @bmp_url "https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.bmp"
+  @jpg_url_with_query "https://avatars3.githubusercontent.com/u/1159573?v=3&s=40"
 
   @jpg_file "./priv/test.jpg"
   @png_file "./priv/test.png"
@@ -50,6 +51,11 @@ defmodule FastimageTest do
   test "Get type and size of local bmp file" do
     assert(Fastimage.type(@bmp_file) == "bmp")
     assert(Fastimage.size(@bmp_file) == @expected_size)
+  end
+
+  test "Get type and size of remote image with query in url" do
+    assert(Fastimage.type(@jpg_url_with_query) == "jpeg")
+    assert(Fastimage.size(@jpg_url_with_query) == %{width: 40, height: 40})
   end
 
 end

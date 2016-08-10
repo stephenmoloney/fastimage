@@ -87,13 +87,14 @@ defmodule Fastimage do
   end
 
 
-  defp recv(%URI{host: host, path: path, scheme: scheme, port: port}, :url, num_chunks) do
+  defp recv(%URI{host: host, path: path, scheme: scheme, port: port, query: query}, :url, num_chunks) do
     transport = if scheme == "https", do: :ssl, else: :tcp
     host = String.to_char_list(host)
+    path_with_query = path <> "?" <> to_string(query)
     {:ok, _data, {_conn_pid, _ref, _fin}} =
     with {:ok, conn_pid} = :gun.open(host, port, %{protocols: [:http], transport: transport}),
       {:ok, :http} = :gun.await_up(conn_pid),
-      ref = :gun.get(conn_pid, path) do
+      ref = :gun.get(conn_pid, path_with_query) do
       stream_chunks({conn_pid, ref, :no_fin}, num_chunks) # returns {:ok, data, {conn_pid, ref, fin}}
     end
   end
