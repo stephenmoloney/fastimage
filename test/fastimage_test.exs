@@ -76,6 +76,12 @@ defmodule FastimageTest do
   end
 
 
+  test "Get the size of image behind redirect" do
+    img = "https://imgredirect.milanuncios.com/fg/1841/69/motos-de-carretera/Kawasaki-ER6N-184169496_1.jpg"
+    assert(Fastimage.size(img) == %{height: 480, width: 640})
+  end
+
+
   # private
 
 
