@@ -1,7 +1,7 @@
 defmodule Fastimage.Mixfile do
   use Mix.Project
   @name "Fastimage"
-  @version "0.0.1"
+  @version "0.0.2"
   @source "https://github.com/stephenmoloney/fastimage"
   @maintainers ["Stephen Moloney"]
 
