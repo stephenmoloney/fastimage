@@ -63,7 +63,6 @@ defmodule FastimageTest do
     |> Enum.map(
      fn(image) -> Fastimage.size(image) end
     )
-    |> Og.log_return(__ENV__, :error)
     assert(list_results, list_expected_results())
   end
 
