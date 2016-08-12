@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.0.3
+
+- Remove warning messages
+
+
+# Changelog
+
 ## v0.0.2
 
 - Change client from `:gun` to `:hackney`.

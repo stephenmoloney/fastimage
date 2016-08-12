@@ -47,9 +47,9 @@ defmodule Fastimage do
   # private or docless
 
 
-  defp size("bmp", data, stream_ref), do: parse_bmp(data, stream_ref)
-  defp size("gif", data, stream_ref), do: parse_gif(data, stream_ref)
-  defp size("png", data, stream_ref), do: parse_png(data, stream_ref)
+  defp size("bmp", data, _stream_ref), do: parse_bmp(data)
+  defp size("gif", data, _stream_ref), do: parse_gif(data)
+  defp size("png", data, _stream_ref), do: parse_png(data)
   defp size("jpeg", data, stream_ref) do
     chunk_size = :erlang.byte_size(data)
     parse_jpeg(stream_ref, {1, data}, data, 0, chunk_size, :initial)
@@ -94,7 +94,7 @@ defmodule Fastimage do
       num_chunks_to_fetch > 0 ->
         next_chunk = :hackney.stream_next(stream_ref)
         receive do
-          {:hackney_response, stream_ref, {:status, status_code, reason} = next_chunk} ->
+          {:hackney_response, stream_ref, {:status, status_code, reason}} ->
             cond do
               status_code > 400 ->
                 "error, could not open image file with error #{status_code} due to reason, #{reason}"
@@ -102,11 +102,11 @@ defmodule Fastimage do
               :true ->
                 stream_chunks(stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data})
             end
-          {:hackney_response, stream_ref, {:headers, headers} = next_chunk} ->
+          {:hackney_response, stream_ref, {:headers, _headers}} ->
             stream_chunks(stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data})
-          {:hackney_response, stream_ref, :done = next_chunk} ->
+          {:hackney_response, stream_ref, :done} ->
             {:ok, acc_data, stream_ref}
-          {:hackney_response, stream_ref, data = next_chunk} ->
+          {:hackney_response, stream_ref, data} ->
             stream_chunks(stream_ref, num_chunks_to_fetch - 1, {acc_num_chunks + 1, <<acc_data::binary, data::binary>>})
           _ ->
             "error, unexpected streaming error while streaming chunks" |> raise()
@@ -197,7 +197,7 @@ defmodule Fastimage do
 
 
   @doc :false
-  def parse_png(data, stream_ref) do
+  def parse_png(data) do
     next_bytes = :erlang.binary_part(data, {16, 8})
     <<width::unsigned-integer-size(32), next_bytes::binary>> = next_bytes
     <<height::unsigned-integer-size(32), _next_bytes::binary>> = next_bytes
@@ -207,7 +207,7 @@ defmodule Fastimage do
 
 
   @doc :false
-  def parse_gif(data, stream_ref) do
+  def parse_gif(data) do
     next_bytes = :erlang.binary_part(data, {6, 4})
     <<width::little-unsigned-integer-size(16), rest::binary>> = next_bytes
     <<height::little-unsigned-integer-size(16), _rest::binary>> = rest
@@ -216,7 +216,7 @@ defmodule Fastimage do
 
 
   @doc :false
-  def parse_bmp(data, stream_ref) do
+  def parse_bmp(data) do
     new_bytes = :erlang.binary_part(data, {14, 14})
     <<char::8, _rest::binary>> = new_bytes
     %{width: width, height: height} =
