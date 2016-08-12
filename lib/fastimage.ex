@@ -1,7 +1,7 @@
 defmodule Fastimage do
   @file_chunk_size 500
   @type recv_error :: :timeout | :no_file_found | :no_file_or_url_found | any
-  @type stream_ref :: {pid, reference, atom} | File.Stream
+  @type stream_ref :: reference | File.Stream
 
 
   @doc ~S"""
