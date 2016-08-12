@@ -1,6 +1,5 @@
 defmodule Fastimage do
   @file_chunk_size 500
-
   @type recv_error :: :timeout | :no_file_found | :no_file_or_url_found | any
   @type stream_ref :: {pid, reference, atom} | File.Stream
 
@@ -39,84 +38,78 @@ defmodule Fastimage do
     {:ok, data, stream_ref} = recv(url_or_file)
     bytes = :erlang.binary_part(data, {0, 2})
     type = type(bytes, stream_ref, [close_stream: :false])
-    dimensions = size(type, data, stream_ref)
+    %{width: w, height: h} = size(type, data, stream_ref)
     close_stream(stream_ref)
-    dimensions
+    %{width: w, height: h}
   end
 
 
   # private or docless
 
 
-  defp size("bmp", data, _stream_ref), do: parse_bmp(data)
-  defp size("gif", data, _stream_ref), do: parse_gif(data)
-  defp size("png", data, _stream_ref), do: parse_png(data)
+  defp size("bmp", data, stream_ref), do: parse_bmp(data, stream_ref)
+  defp size("gif", data, stream_ref), do: parse_gif(data, stream_ref)
+  defp size("png", data, stream_ref), do: parse_png(data, stream_ref)
   defp size("jpeg", data, stream_ref) do
     chunk_size = :erlang.byte_size(data)
     parse_jpeg(stream_ref, {1, data}, data, 0, chunk_size, :initial)
   end
   defp size(:unknown_type, _data, _stream_ref), do: :unknown_type
 
+
   @doc :false
   @spec recv(url_or_file :: String.t | URI.t) ::  {:ok, binary, stream_ref, atom} | {:error, recv_error}
   def recv(url_or_file) do
     {:ok, _data, _stream_ref} =
     cond do
-      is_url(url_or_file) == :true ->
-        {:ok, data, {conn_pid, ref, fin}} = recv(URI.parse(url_or_file), :url, 1)
-        {:ok, data, {conn_pid, ref, fin}}
-      File.exists?(url_or_file) == :true ->
-        {:ok, data, file_stream} = recv(url_or_file, :file, 1)
-        {:ok, data, file_stream}
-      File.exists?(url_or_file) == :false ->
-        {:error, :no_file_found}
-      :true ->
-        {:error, :no_file_or_url_found}
+      is_url(url_or_file) == :true -> recv(url_or_file, :url, 1)
+      File.exists?(url_or_file) == :true -> recv(url_or_file, :file, 1)
+      File.exists?(url_or_file) == :false -> {:error, :no_file_found}
+      :true -> {:error, :no_file_or_url_found}
     end
+  end
+
+
+  defp recv(url, :url, num_chunks) do
+    {:ok, stream_ref} = :hackney.get(url, [], <<>>, [{:async, :once}])
+    stream_chunks(stream_ref, num_chunks, {0, <<>>}) # returns {:ok, data, ref}
   end
 
 
   defp recv(file_path, :file, num_chunks) do
     case File.exists?(file_path) do
       :true ->
-        file_stream = File.stream!(file_path, [:read, :compressed, :binary], @file_chunk_size)
-        stream_chunks(file_stream, num_chunks, {0, <<>>}) # {:ok, data, file_stream}
+        stream_ref = File.stream!(file_path, [:read, :compressed, :binary], @file_chunk_size)
+        stream_chunks(stream_ref, num_chunks, {0, <<>>}) # {:ok, data, file_stream}
       :false ->
         {:error, :file_not_found}
     end
   end
 
 
-  defp recv(%URI{host: host, path: path, scheme: scheme, port: port}, :url, num_chunks) do
-    transport = if scheme == "https", do: :ssl, else: :tcp
-    host = String.to_char_list(host)
-    {:ok, _data, {_conn_pid, _ref, _fin}} =
-    with {:ok, conn_pid} = :gun.open(host, port, %{protocols: [:http], transport: transport}),
-      {:ok, :http} = :gun.await_up(conn_pid),
-      ref = :gun.get(conn_pid, path) do
-      stream_chunks({conn_pid, ref, :no_fin}, num_chunks) # returns {:ok, data, {conn_pid, ref, fin}}
-    end
-  end
-
-
-  defp stream_chunks(stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data} \\ {0, ""}) do
-    case stream_ref do
-      {conn_pid, ref, fin?} -> stream_chunks_url({conn_pid, ref, fin?}, num_chunks_to_fetch, {acc_num_chunks, acc_data})
-      file_stream -> stream_chunks_file(%File.Stream{} = file_stream, num_chunks_to_fetch, {acc_num_chunks, acc_data})
-    end
-  end
-
-  defp stream_chunks_url({conn_pid, ref, fin?}, num_chunks_to_fetch, {acc_num_chunks, acc_data}) do
+  defp stream_chunks(stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data}) when is_reference(stream_ref) do
     cond do
-      fin? == :fin ->
-        cancel_remaining(conn_pid, ref)
-        {:ok, acc_data, {conn_pid, ref, :fin}}
       num_chunks_to_fetch == 0 ->
-        {:ok, acc_data, {conn_pid, ref, :nofin}}
+        {:ok, acc_data, stream_ref}
       num_chunks_to_fetch > 0 ->
+        next_chunk = :hackney.stream_next(stream_ref)
         receive do
-          {:gun_data, conn_pid, ref, fin, data} ->
-            stream_chunks({conn_pid, ref, fin}, num_chunks_to_fetch - 1, {acc_num_chunks + 1, <<acc_data::binary, data::binary>>})
+          {:hackney_response, stream_ref, {:status, status_code, reason} = next_chunk} ->
+            cond do
+              status_code > 400 ->
+                "error, could not open image file with error #{status_code} due to reason, #{reason}"
+                |> raise()
+              :true ->
+                stream_chunks(stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data})
+            end
+          {:hackney_response, stream_ref, {:headers, headers} = next_chunk} ->
+            stream_chunks(stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data})
+          {:hackney_response, stream_ref, :done = next_chunk} ->
+            {:ok, acc_data, stream_ref}
+          {:hackney_response, stream_ref, data = next_chunk} ->
+            stream_chunks(stream_ref, num_chunks_to_fetch - 1, {acc_num_chunks + 1, <<acc_data::binary, data::binary>>})
+          _ ->
+            "error, unexpected streaming error while streaming chunks" |> raise()
         after
           5000 ->
             "error, timeout #{5000} exceeded" |> raise()
@@ -124,20 +117,18 @@ defmodule Fastimage do
       :true -> {:error, :unexpected_streaming_error}
     end
   end
-
-
-  @doc :false
-  def stream_chunks_file(%File.Stream{} = file_stream, num_chunks_to_fetch, {acc_num_chunks, acc_data}) do
+  defp stream_chunks(%File.Stream{} = stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data}) do
     cond do
       num_chunks_to_fetch == 0 ->
-        {:ok, acc_data, file_stream}
+        {:ok, acc_data, stream_ref}
       num_chunks_to_fetch > 0 ->
-        data = Enum.slice(file_stream, acc_num_chunks, num_chunks_to_fetch)
+        data = Enum.slice(stream_ref, acc_num_chunks, num_chunks_to_fetch)
         |> Enum.join()
-        stream_chunks(file_stream, 0, {acc_num_chunks + num_chunks_to_fetch, <<acc_data::binary, data::binary>>})
+        stream_chunks(stream_ref, 0, {acc_num_chunks + num_chunks_to_fetch, <<acc_data::binary, data::binary>>})
       :true -> {:error, :unexpected_streaming_error}
     end
   end
+
 
   @doc :false
   def parse_jpeg(stream_ref, {acc_num_chunks, acc_data}, next_data, num_chunks_to_fetch, chunk_size, state \\ :initial) do
@@ -206,7 +197,7 @@ defmodule Fastimage do
 
 
   @doc :false
-  def parse_png(data) do
+  def parse_png(data, stream_ref) do
     next_bytes = :erlang.binary_part(data, {16, 8})
     <<width::unsigned-integer-size(32), next_bytes::binary>> = next_bytes
     <<height::unsigned-integer-size(32), _next_bytes::binary>> = next_bytes
@@ -216,7 +207,7 @@ defmodule Fastimage do
 
 
   @doc :false
-  def parse_gif(data) do
+  def parse_gif(data, stream_ref) do
     next_bytes = :erlang.binary_part(data, {6, 4})
     <<width::little-unsigned-integer-size(16), rest::binary>> = next_bytes
     <<height::little-unsigned-integer-size(16), _rest::binary>> = rest
@@ -225,9 +216,10 @@ defmodule Fastimage do
 
 
   @doc :false
-  def parse_bmp(data) do
+  def parse_bmp(data, stream_ref) do
     new_bytes = :erlang.binary_part(data, {14, 14})
     <<char::8, _rest::binary>> = new_bytes
+    %{width: width, height: height} =
     case char do
       40 ->
          part = :erlang.binary_part(new_bytes, {4, :erlang.byte_size(new_bytes) - 5})
@@ -240,6 +232,7 @@ defmodule Fastimage do
          <<height::native-unsigned-integer-size(16), _rest::binary>> = rest
          %{width: width, height: height}
     end
+    %{width: width, height: height}
   end
 
 
@@ -271,20 +264,16 @@ defmodule Fastimage do
   defp is_url(%URI{}), do: :true
 
 
-  defp cancel_remaining(conn_pid, ref) do
-    :gun.cancel(conn_pid, ref)
-    :gun.flush(conn_pid)
-    :gun.close(conn_pid)
+  defp close_stream(stream_ref) when is_reference(stream_ref) do
+    :hackney.stop_async(stream_ref)
+    :hackney.cancel_request(stream_ref)
+    :hackney.close(stream_ref)
   end
 
 
-  defp close_stream(stream_ref) do
-    case stream_ref do
-      {conn_pid, ref, _fin?} -> cancel_remaining(conn_pid, ref)
-      filestream -> File.close(filestream.path)
-    end
+  defp close_stream(%File.Stream{} = stream_ref) do
+    File.close(stream_ref.path)
   end
-
 
 
 end

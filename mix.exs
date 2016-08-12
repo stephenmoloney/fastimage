@@ -23,13 +23,13 @@ defmodule Fastimage.Mixfile do
 
   def application do
     [
-    applications: [:logger, :gun]
+    applications: [:logger, :hackney]
     ]
   end
 
   defp deps do
     [
-    {:gun, "~> 1.0.0-pre.1"},
+    {:hackney, "~> 1.6"},
     {:benchfella, "~> 0.3.0", only: [:dev]},
     {:earmark, "~> 1.0", only: :dev},
     {:ex_doc, "~> 0.13", only: :dev}
