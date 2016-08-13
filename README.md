@@ -13,6 +13,7 @@ file size for very large images.
 
 - Supports `bmp`, `jpeg`, `png` and `gif` files
 - Supports remote files by using the uri of the image
+- Follows up to three redirects for a given uri
 - Supports local files by using the file path of the image
 - Yields the file size as a map `%{width: _w, height: _h}`
 - Yields the file type as a string `"bmp", "jpeg", "gif" or "png"`
@@ -34,7 +35,7 @@ Add fastimage to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
-  [{:fastimage, "~> 0.0.1"}]
+  [{:fastimage, "~> 0.0.4"}]
 end
 ```
 
@@ -58,7 +59,6 @@ mix test
 
 - Based on [Ruby Fastimage](https://github.com/sdsykes/fastimage) by [Stephen Sykes](https://github.com/sdsykes)
 - Influenced by a [PHP version of fastimage](https://github.com/tommoor/fastimage) by [Tom Moor](https://github.com/tommoor)
-
 
 
 ## Licence
