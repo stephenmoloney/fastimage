@@ -57,25 +57,23 @@ defmodule Fastimage do
   defp size(:unknown_type, _data, _stream_ref), do: :unknown_type
 
 
-  @doc :false
-  @spec recv(url_or_file :: String.t | URI.t) ::  {:ok, binary, stream_ref, atom} | {:error, recv_error}
-  def recv(url_or_file) do
+  @spec recv(url_or_file :: String.t | URI.t) ::  {:ok, binary, stream_ref} | {:error, recv_error}
+  defp recv(url_or_file) do
     {:ok, _data, _stream_ref} =
     cond do
-      is_url(url_or_file) == :true -> recv(url_or_file, :url)
+      is_url(url_or_file) == :true -> recv(url_or_file, :url, 0)
       File.exists?(url_or_file) == :true -> recv(url_or_file, :file)
       File.exists?(url_or_file) == :false -> {:error, :no_file_found}
       :true -> {:error, :no_file_or_url_found}
     end
   end
-
-
-  defp recv(url, :url) do
-    {:ok, stream_ref} = :hackney.get(url, [], <<>>, [{:async, :once}, {:follow_redirect, true}])
-    stream_chunks(stream_ref, 1, {0, <<>>}) # returns {:ok, data, ref}
+  defp recv(url, :url, num_redirects) when num_redirects > 3 do
+    raise("error, three redirects have already been attempted, are you sure this is the correct image uri?")
   end
-
-
+  defp recv(url, :url, num_redirects) do
+    {:ok, stream_ref} = :hackney.get(url, [], <<>>, [{:async, :once}, {:follow_redirect, true}])
+    stream_chunks(stream_ref, 1, {0, <<>>}, num_redirects) # returns {:ok, data, ref}
+  end
   defp recv(file_path, :file) do
     case File.exists?(file_path) do
       :true ->
@@ -87,7 +85,7 @@ defmodule Fastimage do
   end
 
 
-  defp stream_chunks(stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data}) when is_reference(stream_ref) do
+  defp stream_chunks(stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data}, num_redirects) when is_reference(stream_ref) do
     cond do
       num_chunks_to_fetch == 0 ->
         {:ok, acc_data, stream_ref}
@@ -106,7 +104,7 @@ defmodule Fastimage do
             stream_chunks(stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data})
           {:hackney_response, stream_ref, {:redirect, to_url, _headers}} ->
             close_stream(stream_ref)
-            recv(to_url, :url)
+            recv(to_url, :url, num_redirects + 1)
           {:hackney_response, stream_ref, :done} ->
             {:ok, acc_data, stream_ref}
           {:hackney_response, stream_ref, data} ->
