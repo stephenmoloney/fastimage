@@ -71,7 +71,7 @@ defmodule Fastimage do
 
 
   defp recv(url, :url, num_chunks) do
-    {:ok, stream_ref} = :hackney.get(url, [], <<>>, [{:async, :once}])
+    {:ok, stream_ref} = :hackney.get(url, [], <<>>, [{:async, :once}, {:follow_redirect, true}])
     stream_chunks(stream_ref, num_chunks, {0, <<>>}) # returns {:ok, data, ref}
   end
 
@@ -104,6 +104,8 @@ defmodule Fastimage do
             end
           {:hackney_response, stream_ref, {:headers, _headers}} ->
             stream_chunks(stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data})
+          {:hackney_response, _stream_ref, {:redirect, to_url, _headers}} ->
+            recv(to_url, :url, num_chunks_to_fetch)
           {:hackney_response, stream_ref, :done} ->
             {:ok, acc_data, stream_ref}
           {:hackney_response, stream_ref, data} ->
