@@ -4,9 +4,11 @@ defmodule FastimageTest do
 
   @jpg_url "https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg"
   @jpg_url_with_query "https://avatars0.githubusercontent.com/u/12668653?v=2&s=40"
+  @jpg_with_redirect "http://seanmoloney.com/images/cover1.jpg"
   @png_url "https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.png"
   @gif_url "https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.gif"
   @bmp_url "https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.bmp"
+
 
   @jpg_file "./priv/test.jpg"
   @png_file "./priv/test.png"
@@ -67,18 +69,21 @@ defmodule FastimageTest do
   end
 
 
-  test "Get the size of multiple image file asynchronously" do
+  test "Get the size of multiple image files asynchronously" do
     list_results = list()
-    |> Enum.map(&Task.async(Fastimage, :size, [&1]))
-    |> Enum.map(&Task.await(&1))
+    |> Enum.map(
+      &Task.async(Fastimage, :size, [&1])
+    )
+    |> Enum.map(
+      &Task.await(&1, 10000)
+    )
 
     assert(list_results, list_expected_results())
   end
 
 
-  test "Get the size of image behind redirect" do
-    img = "https://imgredirect.milanuncios.com/fg/1841/69/motos-de-carretera/Kawasaki-ER6N-184169496_1.jpg"
-    assert(Fastimage.size(img) == %{height: 480, width: 640})
+  test "Get the size of an image behind a redirect" do
+    assert(Fastimage.size(@jpg_with_redirect) == %{width: 1200, height: 1230})
   end
 
 
@@ -87,7 +92,7 @@ defmodule FastimageTest do
 
   defp list() do
     Enum.reduce(1..10, [], fn(_i, acc) ->
-      Enum.concat(acc, [@jpg_url, @jpg_url_with_query, @png_url, @gif_url, @bmp_url])
+      Enum.concat(acc, [@jpg_url, @jpg_url_with_query, @jpg_with_redirect, @png_url, @gif_url, @bmp_url])
     end)
   end
 
@@ -96,6 +101,7 @@ defmodule FastimageTest do
     result = [
     %{width: 283, height: 142},
     %{width: 40, height: 40},
+    %{width: 1200, height: 1230},
     %{width: 283, height: 142},
     %{width: 283, height: 142},
     %{width: 283, height: 142}
