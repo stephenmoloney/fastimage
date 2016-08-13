@@ -67,7 +67,7 @@ defmodule Fastimage do
       :true -> {:error, :no_file_or_url_found}
     end
   end
-  defp recv(url, :url, num_redirects) when num_redirects > 3 do
+  defp recv(_url, :url, num_redirects) when num_redirects > 3 do
     raise("error, three redirects have already been attempted, are you sure this is the correct image uri?")
   end
   defp recv(url, :url, num_redirects) do
@@ -78,7 +78,7 @@ defmodule Fastimage do
     case File.exists?(file_path) do
       :true ->
         stream_ref = File.stream!(file_path, [:read, :compressed, :binary], @file_chunk_size)
-        stream_chunks(stream_ref, 1, {0, <<>>}) # {:ok, data, file_stream}
+        stream_chunks(stream_ref, 1, {0, <<>>}, 0) # {:ok, data, file_stream}
       :false ->
         {:error, :file_not_found}
     end
@@ -98,17 +98,17 @@ defmodule Fastimage do
                 "error, could not open image file with error #{status_code} due to reason, #{reason}"
                 |> raise()
               :true ->
-                stream_chunks(stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data})
+                stream_chunks(stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data}, num_redirects)
             end
           {:hackney_response, stream_ref, {:headers, _headers}} ->
-            stream_chunks(stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data})
+            stream_chunks(stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data}, num_redirects)
           {:hackney_response, stream_ref, {:redirect, to_url, _headers}} ->
             close_stream(stream_ref)
             recv(to_url, :url, num_redirects + 1)
           {:hackney_response, stream_ref, :done} ->
             {:ok, acc_data, stream_ref}
           {:hackney_response, stream_ref, data} ->
-            stream_chunks(stream_ref, num_chunks_to_fetch - 1, {acc_num_chunks + 1, <<acc_data::binary, data::binary>>})
+            stream_chunks(stream_ref, num_chunks_to_fetch - 1, {acc_num_chunks + 1, <<acc_data::binary, data::binary>>}, num_redirects)
           _ ->
             "error, unexpected streaming error while streaming chunks" |> raise()
         after
@@ -118,14 +118,14 @@ defmodule Fastimage do
       :true -> {:error, :unexpected_streaming_error}
     end
   end
-  defp stream_chunks(%File.Stream{} = stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data}) do
+  defp stream_chunks(%File.Stream{} = stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data}, 0) do
     cond do
       num_chunks_to_fetch == 0 ->
         {:ok, acc_data, stream_ref}
       num_chunks_to_fetch > 0 ->
         data = Enum.slice(stream_ref, acc_num_chunks, num_chunks_to_fetch)
         |> Enum.join()
-        stream_chunks(stream_ref, 0, {acc_num_chunks + num_chunks_to_fetch, <<acc_data::binary, data::binary>>})
+        stream_chunks(stream_ref, 0, {acc_num_chunks + num_chunks_to_fetch, <<acc_data::binary, data::binary>>}, 0)
       :true -> {:error, :unexpected_streaming_error}
     end
   end
@@ -188,9 +188,10 @@ defmodule Fastimage do
     end
   end
 
+
   @doc :false
   defp parse_jpeg_with_more_data(stream_ref, {acc_num_chunks, acc_data}, next_data, num_chunks_to_fetch, chunk_size, state) do
-    {:ok, new_acc_data, _file_stream} = stream_chunks(stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data})
+    {:ok, new_acc_data, _stream_ref} = stream_chunks(stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data}, 0)
     num_bytes_old_data = :erlang.byte_size(acc_data) - :erlang.byte_size(next_data)
     new_next_data = :erlang.binary_part(new_acc_data, {num_bytes_old_data, :erlang.byte_size(new_acc_data) - num_bytes_old_data})
     parse_jpeg(stream_ref, {acc_num_chunks + num_chunks_to_fetch, new_acc_data}, new_next_data, 0, chunk_size, state)
@@ -204,7 +205,6 @@ defmodule Fastimage do
     <<height::unsigned-integer-size(32), _next_bytes::binary>> = next_bytes
     %{width: width, height: height}
   end
-
 
 
   @doc :false
@@ -245,6 +245,7 @@ defmodule Fastimage do
         next_bytes_until_match(byte, next_bytes)
     end
   end
+
 
   defp matching_byte(<<byte?>>, bytes) do
     <<first_byte, _next_bytes::binary>> = bytes
