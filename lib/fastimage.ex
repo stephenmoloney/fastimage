@@ -62,25 +62,25 @@ defmodule Fastimage do
   def recv(url_or_file) do
     {:ok, _data, _stream_ref} =
     cond do
-      is_url(url_or_file) == :true -> recv(url_or_file, :url, 1)
-      File.exists?(url_or_file) == :true -> recv(url_or_file, :file, 1)
+      is_url(url_or_file) == :true -> recv(url_or_file, :url)
+      File.exists?(url_or_file) == :true -> recv(url_or_file, :file)
       File.exists?(url_or_file) == :false -> {:error, :no_file_found}
       :true -> {:error, :no_file_or_url_found}
     end
   end
 
 
-  defp recv(url, :url, num_chunks) do
+  defp recv(url, :url) do
     {:ok, stream_ref} = :hackney.get(url, [], <<>>, [{:async, :once}, {:follow_redirect, true}])
-    stream_chunks(stream_ref, num_chunks, {0, <<>>}) # returns {:ok, data, ref}
+    stream_chunks(stream_ref, 1, {0, <<>>}) # returns {:ok, data, ref}
   end
 
 
-  defp recv(file_path, :file, num_chunks) do
+  defp recv(file_path, :file) do
     case File.exists?(file_path) do
       :true ->
         stream_ref = File.stream!(file_path, [:read, :compressed, :binary], @file_chunk_size)
-        stream_chunks(stream_ref, num_chunks, {0, <<>>}) # {:ok, data, file_stream}
+        stream_chunks(stream_ref, 1, {0, <<>>}) # {:ok, data, file_stream}
       :false ->
         {:error, :file_not_found}
     end
@@ -104,8 +104,9 @@ defmodule Fastimage do
             end
           {:hackney_response, stream_ref, {:headers, _headers}} ->
             stream_chunks(stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data})
-          {:hackney_response, _stream_ref, {:redirect, to_url, _headers}} ->
-            recv(to_url, :url, num_chunks_to_fetch)
+          {:hackney_response, stream_ref, {:redirect, to_url, _headers}} ->
+            close_stream(stream_ref)
+            recv(to_url, :url)
           {:hackney_response, stream_ref, :done} ->
             {:ok, acc_data, stream_ref}
           {:hackney_response, stream_ref, data} ->
