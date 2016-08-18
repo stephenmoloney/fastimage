@@ -69,7 +69,7 @@ defmodule Fastimage do
       :true -> {:error, :no_file_or_url_found}
     end
   end
-  defp recv(_url, :url, num_redirects, error_retries) when num_redirects > 3 do
+  defp recv(_url, :url, num_redirects, _error_retries) when num_redirects > 3 do
     raise("error, three redirects have already been attempted, are you sure this is the correct image uri?")
   end
   defp recv(url, :url, num_redirects, error_retries) do
@@ -129,20 +129,20 @@ defmodule Fastimage do
       :true -> {:error, :unexpected_http_streaming_error}
     end
   end
-  defp stream_chunks(%File.Stream{} = stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data, _file_path}, 0, 0) do
+  defp stream_chunks(%File.Stream{} = stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data, file_path}, 0, 0) do
     cond do
       num_chunks_to_fetch == 0 ->
         {:ok, acc_data, stream_ref}
       num_chunks_to_fetch > 0 ->
         data = Enum.slice(stream_ref, acc_num_chunks, num_chunks_to_fetch)
         |> Enum.join()
-        stream_chunks(stream_ref, 0, {acc_num_chunks + num_chunks_to_fetch, <<acc_data::binary, data::binary>>, _file_path}, 0, 0)
+        stream_chunks(stream_ref, 0, {acc_num_chunks + num_chunks_to_fetch, <<acc_data::binary, data::binary>>, file_path}, 0, 0)
       :true -> {:error, :unexpected_file_streaming_error}
     end
   end
 
 
-  defp parse_jpeg(stream_ref, {acc_num_chunks, acc_data, url}, next_data, num_chunks_to_fetch, chunk_size, state \\ :initial) do
+  defp parse_jpeg(stream_ref, {acc_num_chunks, acc_data, url}, next_data, num_chunks_to_fetch, chunk_size, state) do
 
     if :erlang.byte_size(next_data) < 4 do # get more data if less that 4 bytes remaining
       new_num_chunks_to_fetch = acc_num_chunks + 2

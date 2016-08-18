@@ -1,6 +1,11 @@
 # Changelog
 
 
+## v0.0.6
+
+- Remove compile warnings.
+
+
 ## v0.0.5
 
 - Allow up to 5 retry attempts to stream the url in the event of a timeout (enhancement/bug fix)
