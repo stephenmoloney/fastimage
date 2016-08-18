@@ -80,7 +80,7 @@ defmodule Fastimage do
     case File.exists?(file_path) do
       :true ->
         stream_ref = File.stream!(file_path, [:read, :compressed, :binary], @file_chunk_size)
-        stream_chunks(stream_ref, 1, {0, <<>>, :nil}, 0, 0) # {:ok, data, file_stream}
+        stream_chunks(stream_ref, 1, {0, <<>>, file_path}, 0, 0) # {:ok, data, file_stream}
       :false ->
         {:error, :file_not_found}
     end
@@ -88,7 +88,6 @@ defmodule Fastimage do
 
 
   defp stream_chunks(stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data, url}, num_redirects, error_retries) when is_reference(stream_ref) do
-    Og.context(__ENV__, :debug)
     cond do
       num_chunks_to_fetch == 0 ->
         {:ok, acc_data, stream_ref}
@@ -130,21 +129,20 @@ defmodule Fastimage do
       :true -> {:error, :unexpected_http_streaming_error}
     end
   end
-  defp stream_chunks(%File.Stream{} = stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data, :nil}, 0, 0) do
+  defp stream_chunks(%File.Stream{} = stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data, _file_path}, 0, 0) do
     cond do
       num_chunks_to_fetch == 0 ->
         {:ok, acc_data, stream_ref}
       num_chunks_to_fetch > 0 ->
         data = Enum.slice(stream_ref, acc_num_chunks, num_chunks_to_fetch)
         |> Enum.join()
-        stream_chunks(stream_ref, 0, {acc_num_chunks + num_chunks_to_fetch, <<acc_data::binary, data::binary>>, :nil}, 0, 0)
+        stream_chunks(stream_ref, 0, {acc_num_chunks + num_chunks_to_fetch, <<acc_data::binary, data::binary>>, _file_path}, 0, 0)
       :true -> {:error, :unexpected_file_streaming_error}
     end
   end
 
 
-  @doc :false
-  def parse_jpeg(stream_ref, {acc_num_chunks, acc_data, url}, next_data, num_chunks_to_fetch, chunk_size, state \\ :initial) do
+  defp parse_jpeg(stream_ref, {acc_num_chunks, acc_data, url}, next_data, num_chunks_to_fetch, chunk_size, state \\ :initial) do
 
     if :erlang.byte_size(next_data) < 4 do # get more data if less that 4 bytes remaining
       new_num_chunks_to_fetch = acc_num_chunks + 2
@@ -201,7 +199,6 @@ defmodule Fastimage do
   end
 
 
-  @doc :false
   defp parse_jpeg_with_more_data(stream_ref, {acc_num_chunks, acc_data, url}, next_data, num_chunks_to_fetch, chunk_size, state) do
     {:ok, new_acc_data, _stream_ref} = stream_chunks(stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data, url}, 0, 0)
     num_bytes_old_data = :erlang.byte_size(acc_data) - :erlang.byte_size(next_data)
@@ -210,8 +207,7 @@ defmodule Fastimage do
   end
 
 
-  @doc :false
-  def parse_png(data) do
+  defp parse_png(data) do
     next_bytes = :erlang.binary_part(data, {16, 8})
     <<width::unsigned-integer-size(32), next_bytes::binary>> = next_bytes
     <<height::unsigned-integer-size(32), _next_bytes::binary>> = next_bytes
@@ -219,8 +215,7 @@ defmodule Fastimage do
   end
 
 
-  @doc :false
-  def parse_gif(data) do
+  defp parse_gif(data) do
     next_bytes = :erlang.binary_part(data, {6, 4})
     <<width::little-unsigned-integer-size(16), rest::binary>> = next_bytes
     <<height::little-unsigned-integer-size(16), _rest::binary>> = rest
@@ -228,8 +223,7 @@ defmodule Fastimage do
   end
 
 
-  @doc :false
-  def parse_bmp(data) do
+  defp parse_bmp(data) do
     new_bytes = :erlang.binary_part(data, {14, 14})
     <<char::8, _rest::binary>> = new_bytes
     %{width: width, height: height} =
