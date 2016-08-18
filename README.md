@@ -35,7 +35,7 @@ Add fastimage to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
-  [{:fastimage, "~> 0.0.4"}]
+  [{:fastimage, "~> 0.0.5"}]
 end
 ```
 
