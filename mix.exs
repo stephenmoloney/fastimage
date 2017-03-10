@@ -1,7 +1,7 @@
 defmodule Fastimage.Mixfile do
   use Mix.Project
   @name "Fastimage"
-  @version "0.0.6"
+  @version "0.0.7"
   @source "https://github.com/stephenmoloney/fastimage"
   @maintainers ["Stephen Moloney"]
 
@@ -29,8 +29,7 @@ defmodule Fastimage.Mixfile do
 
   defp deps do
     [
-    {:hackney, "~> 1.6"},
-    {:og, "~> 0.1"},
+    {:hackney, "~> 1.7"},
     {:benchfella, "~> 0.3.0", only: [:dev]},
     {:earmark, "~> 1.0", only: :dev},
     {:ex_doc, "~> 0.13", only: :dev}

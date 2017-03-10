@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.0.7
+
+[bug fixes]
+- Fix for [issue #9](https://github.com/stephenmoloney/fastimage/issues/9)
+
+[changes]
+- remove dependency on [Og](https://hex.pm/packages/og)
+
 
 ## v0.0.6
 

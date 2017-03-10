@@ -97,8 +97,8 @@ defmodule Fastimage do
           {:hackney_response, stream_ref, {:status, status_code, reason}} ->
             cond do
               status_code > 400 ->
-                "error, could not open image file with error #{status_code} due to reason, #{reason}"
-                |> raise()
+                error_msg = "error, could not open image file with error #{status_code} due to reason, #{reason}"
+                raise(error_msg)
               :true ->
                 stream_chunks(stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data, url}, num_redirects, error_retries)
             end
@@ -112,18 +112,15 @@ defmodule Fastimage do
           {:hackney_response, stream_ref, data} ->
             stream_chunks(stream_ref, num_chunks_to_fetch - 1, {acc_num_chunks + 1, <<acc_data::binary, data::binary>>, url}, num_redirects, error_retries)
           _ ->
-            "error, unexpected streaming error while streaming chunks" |> raise()
+            raise("error, unexpected streaming error while streaming chunks")
         after @stream_timeout ->
-          error = "error, uri stream timeout #{@stream_timeout} exceeded"
-          Og.log(error, __ENV__, :warn)
-          Og.log("attempt number #{error_retries} to stream more chunks (chunk # #{acc_num_chunks})", __ENV__, :warn)
+          error = "error, uri stream timeout #{@stream_timeout} exceeded too many times"
           case error_retries < @max_error_retries do
             :true ->
-                close_stream(stream_ref)
-                recv(url, :url, num_redirects, error_retries + 1)
+              close_stream(stream_ref)
+              recv(url, :url, num_redirects, error_retries + 1)
             :false ->
-                Og.log(error, __ENV__, :error)
-                error |> raise()
+              raise(error)
           end
         end
       :true -> {:error, :unexpected_http_streaming_error}
