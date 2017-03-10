@@ -92,7 +92,7 @@ defmodule Fastimage do
       num_chunks_to_fetch == 0 ->
         {:ok, acc_data, stream_ref}
       num_chunks_to_fetch > 0 ->
-        next_chunk = :hackney.stream_next(stream_ref)
+        _next_chunk = :hackney.stream_next(stream_ref)
         receive do
           {:hackney_response, stream_ref, {:status, status_code, reason}} ->
             cond do
@@ -162,15 +162,16 @@ defmodule Fastimage do
       :sof ->
         <<next_byte::8, next_bytes::binary>> = next_data
         cond do
-          :true == next_byte in (224..239) ->
+          :true == (next_byte == 225) ->
+            # TODO - add option for exif information parsing here
+            parse_jpeg(stream_ref, {acc_num_chunks, acc_data, url}, next_bytes, num_chunks_to_fetch, chunk_size, :skip)
+          :true == (next_byte in (224..239)) ->
             parse_jpeg(stream_ref, {acc_num_chunks, acc_data, url}, next_bytes, num_chunks_to_fetch, chunk_size, :skip)
           :true == [(192..195), (197..199), (201..203), (205..207)] |>
                    Enum.any?(fn(range) -> next_byte in range end) ->
             parse_jpeg(stream_ref, {acc_num_chunks, acc_data, url}, next_bytes, num_chunks_to_fetch, chunk_size, :read)
-          :true == next_byte == 255 ->
+          :true == (next_byte == 255) ->
             parse_jpeg(stream_ref, {acc_num_chunks, acc_data, url}, next_bytes, num_chunks_to_fetch, chunk_size, :sof)
-          :true == next_byte == 225 ->
-            parse_jpeg(stream_ref, {acc_num_chunks, acc_data, url}, next_bytes, num_chunks_to_fetch, chunk_size, :skip)
           :true ->
             parse_jpeg(stream_ref, {acc_num_chunks, acc_data, url}, next_bytes, num_chunks_to_fetch, chunk_size, :skip)
         end
