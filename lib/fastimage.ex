@@ -98,6 +98,7 @@ defmodule Fastimage do
             cond do
               status_code > 400 ->
                 error_msg = "error, could not open image file with error #{status_code} due to reason, #{reason}"
+                close_stream(stream_ref)
                 raise(error_msg)
               :true ->
                 stream_chunks(stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data, url}, num_redirects, error_retries)
