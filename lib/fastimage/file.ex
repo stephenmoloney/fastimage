@@ -45,21 +45,6 @@ defmodule Fastimage.File do
     end
   end
 
-  #  defp type(bytes, stream_ref, opts) do
-  #    case Keyword.get(opts, :close_stream, :false) do
-  #      :true -> close_stream(stream_ref)
-  #      :false -> :ok
-  #    end
-  #    cond do
-  #      bytes == "BM" -> "bmp"
-  #      bytes == "GI" -> "gif"
-  #      bytes == <<255, 216>> -> "jpeg"
-  #      bytes == (<<137>> <> "P") -> "png"
-  #      :true -> :unknown_type
-  #    end
-  #  end
-
-
   @doc ~S"""
   Returns the dimensions of the image as a map in the form `%{width: _w, height: _h}`. Supports "bmp", "gif", "jpeg"
   or "png" image files only. Returns :unknown_type if the image file type is not supported.

@@ -29,6 +29,7 @@ defmodule Fastimage.Mixfile do
 
   defp deps do
     [
+      {:og, "~> 1.0"},
       {:hackney, "== 1.10.1"},
       {:benchfella, "~> 0.3.0", only: [:dev]},
       {:earmark, "~> 1.0", only: :dev},

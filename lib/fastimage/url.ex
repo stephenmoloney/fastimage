@@ -3,7 +3,6 @@ defmodule Fastimage.Url do
   import Fastimage.Utils
   alias Fastimage.{Dimensions, Error}
 
-  @file_chunk_size 500
   @stream_timeout 3_000
   @max_error_retries 5
 
@@ -17,9 +16,10 @@ defmodule Fastimage.Url do
   """
   @spec type(url :: String.t) :: String.t | :unknown_type
   def type(url) do
-    {:ok, data, stream_ref} = recv(url)
-    bytes = :erlang.binary_part(data, {0, 2})
-    type(bytes, stream_ref, url, [close_stream: :true])
+    with {:ok, data, stream_ref} <- recv(url, 0, 0),
+        bytes <- :erlang.binary_part(data, {0, 2}) do
+      type(bytes, stream_ref, url, close_stream: true)
+    end
   end
   defp type(bytes, stream_ref, url, opts) do
     stream_to_be_closed? = Keyword.get(opts, :close_stream, false)
@@ -27,16 +27,16 @@ defmodule Fastimage.Url do
 
     cond do
       bytes == "BM" ->
-        "bmp"
+        {:ok, "bmp"}
 
       bytes == "GI" ->
-        "gif"
+        {:ok, "gif"}
 
       bytes == <<255, 216>> ->
-        "jpeg"
+        {:ok, "jpeg"}
 
       bytes == <<137>> <> "P" ->
-        "png"
+        {:ok, "png"}
 
       true ->
         stream_to_be_closed? || close_stream(stream_ref)
@@ -51,12 +51,12 @@ defmodule Fastimage.Url do
   """
   @spec size(url :: String.t) :: map | :unknown_type
   def size(url) do
-    with {:ok, data, stream_ref} <- recv(url),
+    with {:ok, data, stream_ref} <- recv(url, 0, 0),
         bytes <- :erlang.binary_part(data, {0, 2}),
-        type <- type(bytes, stream_ref, url, [close_stream: :false]),
-        %{width: w, height: h} = size(type, data, stream_ref, url) do
+         {:ok, type} <- type(bytes, stream_ref, url, [close_stream: :false]),
+         {:ok, %Dimensions{width: _, height: _} = size} = size(type, data, stream_ref, url) do
       close_stream(stream_ref)
-      %{width: w, height: h}
+      {:ok, size}
     end
   end
 
@@ -76,34 +76,13 @@ defmodule Fastimage.Url do
 
 
   @doc false
-  @spec recv(String.t(), :url, integer(), integer) ::
-          {:ok, binary(), reference()} | {:error, Error.t()}
-  def recv(url, :url, num_redirects, error_retries) do
+  @spec recv(String.t(), integer(), integer) :: {:ok, binary(), reference()} | {:error, Error.t()}
+  def recv(url, num_redirects, error_retries) do
     with {:ok, stream_ref} <- :hackney.get(url, [], <<>>, [{:async, :once}, {:follow_redirect, true}]) do
       stream_chunks(stream_ref, 1, {0, <<>>, url}, num_redirects, error_retries)
     end
   end
-
-  @spec recv(url :: String.t | URI.t) ::  {:ok, binary, stream_ref} | {:error, recv_error}
-  def recv(url) do
-    {:ok, _data, _stream_ref} =
-      cond do
-        is_url?(url) == :true -> recv(url, :url, 0, 0)
-        File.exists?(url) == :true -> recv(url, :file)
-        File.exists?(url) == :false -> {:error, :no_file_found}
-        :true -> {:error, :no_file_or_url_found}
-      end
-  end
-  defp recv(file_path, :file) do
-    case File.exists?(file_path) do
-      :true ->
-        stream_ref = File.stream!(file_path, [:read, :compressed, :binary], @file_chunk_size)
-        stream_chunks(stream_ref, 1, {0, <<>>, file_path}, 0, 0) # {:ok, data, file_stream}
-      :false ->
-        {:error, :file_not_found}
-    end
-  end
-  def recv(_url, :url, num_redirects, _error_retries) when num_redirects > 3 do
+  def recv(_url, num_redirects, _error_retries) when num_redirects > 3 do
     raise("error, three redirects have already been attempted, are you sure this is the correct image uri?")
   end
 
@@ -126,7 +105,7 @@ defmodule Fastimage.Url do
             stream_chunks(stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data, url}, num_redirects, error_retries)
           {:hackney_response, stream_ref, {:redirect, to_url, _headers}} ->
             close_stream(stream_ref)
-            recv(to_url, :url, num_redirects + 1, error_retries)
+            recv(to_url, num_redirects + 1, error_retries)
           {:hackney_response, stream_ref, :done} ->
             {:ok, acc_data, stream_ref}
           {:hackney_response, stream_ref, data} ->
@@ -138,7 +117,7 @@ defmodule Fastimage.Url do
           case error_retries < @max_error_retries do
             :true ->
               close_stream(stream_ref)
-              recv(url, :url, num_redirects, error_retries + 1)
+              recv(url, num_redirects, error_retries + 1)
             :false ->
               raise(error)
           end
@@ -212,7 +191,7 @@ defmodule Fastimage.Url do
         next_bytes = :erlang.binary_part(next_data, {3, :erlang.byte_size(next_data) - 3})
         <<height::unsigned-integer-size(16), next_bytes::binary>> = next_bytes
         <<width::unsigned-integer-size(16), _next_bytes::binary>> = next_bytes
-        %{width: width, height: height}
+        {:ok, %Dimensions{width: width, height: height}}
     end
   end
 
@@ -229,7 +208,7 @@ defmodule Fastimage.Url do
     next_bytes = :erlang.binary_part(data, {16, 8})
     <<width::unsigned-integer-size(32), next_bytes::binary>> = next_bytes
     <<height::unsigned-integer-size(32), _next_bytes::binary>> = next_bytes
-    %{width: width, height: height}
+    {:ok, %Dimensions{width: width, height: height}}
   end
 
 
@@ -237,7 +216,7 @@ defmodule Fastimage.Url do
     next_bytes = :erlang.binary_part(data, {6, 4})
     <<width::little-unsigned-integer-size(16), rest::binary>> = next_bytes
     <<height::little-unsigned-integer-size(16), _rest::binary>> = rest
-    %{width: width, height: height}
+    {:ok, %Dimensions{width: width, height: height}}
   end
 
 
@@ -257,7 +236,7 @@ defmodule Fastimage.Url do
           <<height::native-unsigned-integer-size(16), _rest::binary>> = rest
           %{width: width, height: height}
       end
-    %{width: width, height: height}
+    {:ok, %Dimensions{width: width, height: height}}
   end
 
 
