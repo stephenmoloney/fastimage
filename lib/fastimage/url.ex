@@ -27,16 +27,16 @@ defmodule Fastimage.Url do
 
     cond do
       bytes == "BM" ->
-        {:ok, "bmp"}
+        "bmp"
 
       bytes == "GI" ->
-        {:ok, "gif"}
+        "gif"
 
       bytes == <<255, 216>> ->
-        {:ok, "jpeg"}
+        "jpeg"
 
       bytes == <<137>> <> "P" ->
-        {:ok, "png"}
+        "png"
 
       true ->
         stream_to_be_closed? || close_stream(stream_ref)
