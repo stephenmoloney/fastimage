@@ -1,7 +1,8 @@
 defmodule Fastimage.Stream do
   @moduledoc false
   alias Fastimage.Stream.Acc
-  alias Fastimage.Utils
+  alias Fastimage.{Error, Utils}
+  @file_chunk_size 500
 
   defmodule Acc do
     @moduledoc false
@@ -44,7 +45,6 @@ defmodule Fastimage.Stream do
             max_redirect_retries: integer()
           }
 
-    @doc false
     def redraw(%Acc{} = existing) do
       redrawn =
         Map.take(existing, [
@@ -63,7 +63,26 @@ defmodule Fastimage.Stream do
         %Acc{
           source: source,
           source_type: :file,
-          stream_ref: %File.Stream{} = stream_ref,
+          stream_timeout: stream_timeout,
+          stream_state: :unstarted,
+          num_chunks_to_fetch: num_chunks_to_fetch,
+          acc_num_chunks: acc_num_chunks,
+          acc_data: acc_data,
+          num_redirects: num_redirects,
+          error_retries: error_retries,
+          max_redirect_retries: max_redirect_retries,
+          max_error_retries: max_error_retries
+        } = acc
+      ) do
+    stream_ref = File.stream!(source, [:read, :compressed], @file_chunk_size)
+    stream_data(%{acc | stream_ref: stream_ref, stream_state: :processing})
+  end
+
+  def stream_data(
+        %Acc{
+          source: source,
+          source_type: :file,
+          stream_ref: %File.Stream{} = file_stream,
           stream_timeout: stream_timeout,
           stream_state: :processing,
           num_chunks_to_fetch: num_chunks_to_fetch,
@@ -73,12 +92,32 @@ defmodule Fastimage.Stream do
           error_retries: error_retries,
           max_redirect_retries: max_redirect_retries,
           max_error_retries: max_error_retries
-        } = _chunks
+        } = acc
       ) do
-    :ok
+    cond do
+      num_chunks_to_fetch == 0 ->
+        {:ok, acc}
+
+      num_chunks_to_fetch > 0 ->
+        data =
+          file_stream
+          |> Enum.slice(acc_num_chunks, num_chunks_to_fetch)
+          |> Enum.join()
+
+        stream_data(%{
+          acc
+          | num_chunks_to_fetch: 0,
+            acc_num_chunks: acc_num_chunks + num_chunks_to_fetch,
+            acc_data: <<acc_data::binary, data::binary>>
+        })
+
+      true ->
+        Utils.close_stream(file_stream)
+        reason = {:unexpected_file_streaming_error, acc}
+        {:error, Error.exception(reason)}
+    end
   end
 
-  @doc false
   def stream_data(
         %Acc{
           source: source,

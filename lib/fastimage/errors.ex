@@ -85,8 +85,10 @@ defmodule Fastimage.Error do
     binary_streaming_error()
   end
 
-  defp format_error({:unexpected_file_streaming_error, filepath}) do
-    file_streaming_error(filepath)
+  defp format_error(
+         {:unexpected_file_streaming_error, %Stream.Acc{stream_ref: %File.Stream{path: path}}}
+       ) do
+    file_streaming_error(path)
   end
 
   defp format_error({:unexpected_http_streaming_error, url, hackney_reason}) do
@@ -178,7 +180,7 @@ defmodule Fastimage.Error do
     """
   end
 
-  defp unsupported_error(acc, :url) do
+  defp unsupported_error(%Stream.Acc{} = acc, :url) do
     """
     The image type is currently unsupported for url #{acc.source}.
 

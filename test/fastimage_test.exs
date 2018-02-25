@@ -40,16 +40,16 @@ defmodule FastimageTest do
     assert(actual_size == expected_size)
   end
 
-  #  test "Get type and size of local jpeg file" do
-  #    actual_type = Fastimage.type(@jpg_file)
-  #    actual_size = Fastimage.size(@jpg_file)
-  #
-  #    expected_type = {:ok, :jpeg}
-  #    expected_size = {:ok, @expected_size}
-  #
-  #    assert(actual_type == expected_type)
-  #    assert(actual_size == expected_size)
-  #  end
+  test "Get type and size of local jpeg file" do
+    actual_type = Fastimage.type(@jpg_file)
+    actual_size = Fastimage.size(@jpg_file)
+
+    expected_type = {:ok, :jpeg}
+    expected_size = {:ok, @expected_size}
+
+    assert(actual_type == expected_type)
+    assert(actual_size == expected_size)
+  end
 
   test "Get type and size of remote png url" do
     actual_type = Fastimage.type(@png_url)
@@ -62,16 +62,16 @@ defmodule FastimageTest do
     assert(actual_size == expected_size)
   end
 
-  #  test "Get type and size of local png file" do
-  #    actual_type = Fastimage.type(@png_file)
-  #    actual_size = Fastimage.size(@png_file)
-  #
-  #    expected_type = {:ok, :png}
-  #    expected_size = {:ok, @expected_size}
-  #
-  #    assert(actual_type == expected_type)
-  #    assert(actual_size == expected_size)
-  #  end
+  test "Get type and size of local png file" do
+    actual_type = Fastimage.type(@png_file)
+    actual_size = Fastimage.size(@png_file)
+
+    expected_type = {:ok, :png}
+    expected_size = {:ok, @expected_size}
+
+    assert(actual_type == expected_type)
+    assert(actual_size == expected_size)
+  end
 
   test "Get type and size of remote gif url" do
     actual_type = Fastimage.type(@gif_url)
@@ -84,16 +84,16 @@ defmodule FastimageTest do
     assert(actual_size == expected_size)
   end
 
-  #  test "Get type and size of local gif file" do
-  #    actual_type = Fastimage.type(@gif_file)
-  #    actual_size = Fastimage.size(@gif_file)
-  #
-  #    expected_type = {:ok, :gif}
-  #    expected_size = {:ok, @expected_size}
-  #
-  #    assert(actual_type == expected_type)
-  #    assert(actual_size == expected_size)
-  #  end
+  test "Get type and size of local gif file" do
+    actual_type = Fastimage.type(@gif_file)
+    actual_size = Fastimage.size(@gif_file)
+
+    expected_type = {:ok, :gif}
+    expected_size = {:ok, @expected_size}
+
+    assert(actual_type == expected_type)
+    assert(actual_size == expected_size)
+  end
 
   test "Get type and size of remote bmp url" do
     actual_type = Fastimage.type(@bmp_url)
@@ -106,16 +106,16 @@ defmodule FastimageTest do
     assert(actual_size == expected_size)
   end
 
-  #  test "Get type and size of local bmp file" do
-  #    actual_type = Fastimage.type(@bmp_file)
-  #    actual_size = Fastimage.size(@bmp_file)
-  #
-  #    expected_type = {:ok, :bmp}
-  #    expected_size = {:ok, @expected_size}
-  #
-  #    assert(actual_type == expected_type)
-  #    assert(actual_size == expected_size)
-  #  end
+  test "Get type and size of local bmp file" do
+    actual_type = Fastimage.type(@bmp_file)
+    actual_size = Fastimage.size(@bmp_file)
+
+    expected_type = {:ok, :bmp}
+    expected_size = {:ok, @expected_size}
+
+    assert(actual_type == expected_type)
+    assert(actual_size == expected_size)
+  end
 
   test "Get the size of multiple image files synchronously" do
     list_results =

@@ -26,17 +26,20 @@ defmodule Fastimage do
 
   ## Options
 
-    * `:stream_timeout` - An override for the after `:stream_timeout` field
+    * `:stream_timeout` - Applies to a url only.
+    An override for the after `:stream_timeout` field
     in the `Fastimage.Stream.Acc` struct which in turn determines the timeout in the
     processing of the hackney stream. By default the @default_stream_timeout
     is used in `Fastimage.Stream.Acc`.
 
-    * `:max_error_retries` - An override for the `:max_error_retries` field
+    * `:max_error_retries` - Applies to a url only.
+    An override for the `:max_error_retries` field
     in the `Fastimage.Stream.Acc` struct which in turn determines the maximum number
     of retries that will be attempted before giving up and returning an error.
     By default the @default_max_error_retries is used in `Fastimage.Stream.Acc`.
 
-    * `:max_redirect_retries` - An override for the `:max_redirect_retries` field
+    * `:max_redirect_retries` - Applies to a url only.
+    An override for the `:max_redirect_retries` field
     in the `Fastimage.Stream.Acc` struct which in turn determines the maximum number
     of redirects that will be attempted before giving up and returning an error.
     By default the @default_max_redirect_retries is used in `Fastimage.Stream.Acc`.
@@ -91,17 +94,20 @@ defmodule Fastimage do
 
   ## Options
 
-    * `:stream_timeout` - An override for the after `:stream_timeout` field
+    * `:stream_timeout` - Applies to a url only.
+    An override for the after `:stream_timeout` field
     in the `Fastimage.Stream.Acc` struct which in turn determines the timeout in the
     processing of the hackney stream. By default the @default_stream_timeout
     is used in `Fastimage.Stream.Acc`.
 
-    * `:max_error_retries` - An override for the `:max_error_retries` field
+    * `:max_error_retries` - Applies to a url only.
+    An override for the `:max_error_retries` field
     in the `Fastimage.Stream.Acc` struct which in turn determines the maximum number
     of retries that will be attempted before giving up and returning an error.
     By default the @default_max_error_retries is used in `Fastimage.Stream.Acc`.
 
-    * `:max_redirect_retries` - An override for the `:max_redirect_retries` field
+    * `:max_redirect_retries` - Applies to a url only.
+    An override for the `:max_redirect_retries` field
     in the `Fastimage.Stream.Acc` struct which in turn determines the maximum number
     of redirects that will be attempted before giving up and returning an error.
     By default the @default_max_redirect_retries is used in `Fastimage.Stream.Acc`.
@@ -165,17 +171,20 @@ defmodule Fastimage do
 
   ## Options
 
-    * `:stream_timeout` - An override for the after `:stream_timeout` field
+    * `:stream_timeout` - Applies to a url only.
+    An override for the after `:stream_timeout` field
     in the `Fastimage.Stream.Acc` struct which in turn determines the timeout in the
     processing of the hackney stream. By default the @default_stream_timeout
     is used in `Fastimage.Stream.Acc`.
 
-    * `:max_error_retries` - An override for the `:max_error_retries` field
+    * `:max_error_retries` - Applies to a url only.
+    An override for the `:max_error_retries` field
     in the `Fastimage.Stream.Acc` struct which in turn determines the maximum number
     of retries that will be attempted before giving up and returning an error.
     By default the @default_max_error_retries is used in `Fastimage.Stream.Acc`.
 
-    * `:max_redirect_retries` - An override for the `:max_redirect_retries` field
+    * `:max_redirect_retries` - Applies to a url only.
+    An override for the `:max_redirect_retries` field
     in the `Fastimage.Stream.Acc` struct which in turn determines the maximum number
     of redirects that will be attempted before giving up and returning an error.
     By default the @default_max_redirect_retries is used in `Fastimage.Stream.Acc`.
@@ -226,9 +235,17 @@ defmodule Fastimage do
       source: source,
       source_type: source_type
     }
-    |> maybe_put_option(:stream_timeout, stream_timeout)
-    |> maybe_put_option(:max_error_retries, max_error_retries)
-    |> maybe_put_option(:max_redirect_retries, max_redirect_retries)
+
+    acc =
+    if source_type == :url do
+      acc
+      |> maybe_put_option(:stream_timeout, stream_timeout)
+      |> maybe_put_option(:max_error_retries, max_error_retries)
+      |> maybe_put_option(:max_redirect_retries, max_redirect_retries)
+    else
+      acc
+    end
+
 
     with {:ok, %Stream.Acc{} = acc} <- Stream.stream_data(acc),
          bytes <- :erlang.binary_part(acc.acc_data, {0, 2}),
