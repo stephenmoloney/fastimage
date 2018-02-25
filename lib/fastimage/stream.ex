@@ -3,6 +3,7 @@ defmodule Fastimage.Stream do
   alias Fastimage.Stream.Acc
   alias Fastimage.{Error, Utils}
   @file_chunk_size 500
+  @binary_chunk_size 500
 
   defmodule Acc do
     @moduledoc false
@@ -14,6 +15,7 @@ defmodule Fastimage.Stream do
     @type source_type :: :url | :file | :binary
     @type image_type :: :bmp | :file | :binary
     @type stream_state :: :unstarted | :processing | :done
+    @type stream_ref :: reference() | File.Stream.t() | Enumerable.t()
 
     defstruct source: nil,
               source_type: nil,
@@ -32,7 +34,7 @@ defmodule Fastimage.Stream do
     @type t :: %Acc{
             source: binary(),
             source_type: source_type() | nil,
-            stream_ref: reference() | File.Stream.t() | nil,
+            stream_ref: stream_ref() | nil,
             stream_timeout: integer(),
             stream_state: stream_state(),
             image_type: image_type(),
@@ -56,6 +58,64 @@ defmodule Fastimage.Stream do
         ])
 
       Map.merge(%Acc{}, redrawn)
+    end
+  end
+
+  def stream_data(
+        %Acc{
+          source: source,
+          source_type: :binary,
+          stream_timeout: stream_timeout,
+          stream_state: :unstarted,
+          num_chunks_to_fetch: num_chunks_to_fetch,
+          acc_num_chunks: acc_num_chunks,
+          acc_data: acc_data,
+          num_redirects: num_redirects,
+          error_retries: error_retries,
+          max_redirect_retries: max_redirect_retries,
+          max_error_retries: max_error_retries
+        } = acc
+      ) do
+    stream_data(%{acc | stream_ref: binary_stream(source), stream_state: :processing})
+  end
+
+  def stream_data(
+        %Acc{
+          source: source,
+          source_type: :binary,
+          stream_ref: binary_stream,
+          stream_timeout: stream_timeout,
+          stream_state: :processing,
+          num_chunks_to_fetch: num_chunks_to_fetch,
+          acc_num_chunks: acc_num_chunks,
+          acc_data: acc_data,
+          num_redirects: num_redirects,
+          error_retries: error_retries,
+          max_redirect_retries: max_redirect_retries,
+          max_error_retries: max_error_retries
+        } = acc
+      ) do
+    cond do
+      num_chunks_to_fetch == 0 ->
+        {:ok, acc}
+
+      num_chunks_to_fetch > 0 ->
+        data =
+          binary_stream
+          |> Enum.slice(acc_num_chunks, num_chunks_to_fetch)
+          |> Enum.join()
+
+        stream_data(%{
+          acc
+          | #                  num_chunks_to_fetch: num_chunks_to_fetch - 1,
+            num_chunks_to_fetch: num_chunks_to_fetch - 1,
+            acc_num_chunks: acc_num_chunks + num_chunks_to_fetch,
+            acc_data: <<acc_data::binary, data::binary>>
+        })
+
+      true ->
+        reason = :unexpected_binary_streaming_error
+        {:error, Error.exception(reason)}
     end
   end
 
@@ -247,5 +307,26 @@ defmodule Fastimage.Stream do
 
   def stream_data(%Acc{stream_state: :done} = acc) do
     {:ok, acc}
+  end
+
+  # private
+
+  defp binary_stream(binary_data) do
+    Stream.resource(
+      fn -> binary_data end,
+      fn binary_data ->
+        case :erlang.byte_size(binary_data) > @binary_chunk_size do
+          true ->
+            chunk = :binary.part(binary_data, 0, @binary_chunk_size)
+            <<_chunk, next_binary_data::binary>> = binary_data
+            {[chunk], next_binary_data}
+
+          false ->
+            final_chunk = binary_data
+            {:halt, final_chunk}
+        end
+      end,
+      fn _last_chunk -> :ok end
+    )
   end
 end

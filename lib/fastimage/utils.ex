@@ -50,4 +50,8 @@ defmodule Fastimage.Utils do
   def close_stream(%File.Stream{} = stream_ref) do
     File.close(stream_ref.path)
   end
+
+  def close_stream(_stream_ref) do
+    :ok
+  end
 end
