@@ -37,7 +37,7 @@ defmodule Fastimage.Mixfile do
 
   defp deps do
     [
-      {:hackney, "== 1.10.1"},
+      {:hackney, @hackney_versions},
       {:og, "~> 1.0"},
 
       # dev/test only

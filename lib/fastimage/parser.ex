@@ -173,17 +173,15 @@ defmodule Fastimage.Parser do
           stream_state: :done
         } = acc,
         next_data,
-        chunk_size,
-        state
+        _chunk_size,
+        _state
       ) do
     raise("there is no more data to stream")
   end
 
   def parse_jpeg_with_more_data(
         %Stream.Acc{
-          acc_data: acc_data,
-          acc_num_chunks: acc_num_chunks,
-          num_chunks_to_fetch: num_chunks_to_fetch
+          acc_data: acc_data
         } = acc,
         next_data,
         chunk_size,

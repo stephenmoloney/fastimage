@@ -18,14 +18,21 @@ defmodule Fastimage.Url do
   Returns the dimensions of the image as a map in the form `%{width: _w, height: _h}`. Supports "bmp", "gif", "jpeg"
   or "png" image files only. Returns :unknown_type if the image file type is not supported.
   """
-  @spec size(url :: String.t()) :: map | :unknown_type
-  def size(url) do
+  @spec info(url :: String.t()) :: map | :unknown_type
+  def info(url) do
     with {:ok, acc} <- Stream.stream_data(%Stream.Acc{source: url}),
          bytes <- :erlang.binary_part(acc.acc_data, {0, 2}),
          {:ok, type} <- type(bytes, acc, close_stream: false),
          {:ok, size} = Parser.size(type, acc) do
       Utils.close_stream(acc.stream_ref)
-      {:ok, size}
+
+      {:ok,
+       %Fastimage{
+         source: url,
+         source_type: :url,
+         image_type: type,
+         dimensions: size
+       }}
     end
   end
 

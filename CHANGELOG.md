@@ -13,6 +13,8 @@ before it returned `result`. To achieve the same behaviour as before, now
 `type!/1` is now available.
 
 [changes]
+- Introduce `Fastimage.info/1` function that gets the type and size in a 
+single streaming pass and return a `Fastimage` struct with various infos.
 - Separate structure into 3 modules depending on if type is a binary, url or a file.
 - Separate the parser functions into their own module.
 - Implement callbacks for `size/1`, `type/1`
