@@ -1,5 +1,29 @@
 # Changelog
 
+## v1.0.0-rc1
+
+[breaking changes]
+- `type/1` and `type!/1` functions now return the image types as 
+atoms instead of `String.t()`. image_types = `:bmp | :gif | :jpeg | :png`
+- `size/1` returns `{:ok, Fastimage.Dimensions.t()}` whereas 
+before it returned `map()`. To achieve the same behaviour as before, now
+`size!/1` is now available.
+- `type/1` returns `{:ok, result}` whereas 
+before it returned `result`. To achieve the same behaviour as before, now
+`type!/1` is now available.
+
+[changes]
+- Separate structure into 3 modules depending on if type is a binary, url or a file.
+- Separate the parser functions into their own module.
+- Implement callbacks for `size/1`, `type/1`
+
+[bug fixes]
+- `close_stream` bug fixed where `:hackney` streams were not properly closed. 
+
+[enhancements]
+- Added ability to get size and type for binaries
+- Added Fastimage.Error exception structs for improved error handling
+
 ## v0.0.7
 
 [bug fixes]

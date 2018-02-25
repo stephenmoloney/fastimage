@@ -24,10 +24,11 @@ matrix:
 
 script:
   - mix do deps.compile, compile
-#  - >
-#    if [[ "${TRAVIS_ELIXIR_VERSION}" == "1.6.1" ]]; then
-#      mix format mix.exs lib/**/*.{ex,exs}test/**/*.{ex,exs} --check-formatted
-#    fi;
-#  - mix credo --strict --ignore maxlinelength,cyclomaticcomplexity
+  - >
+    if [[ "${TRAVIS_ELIXIR_VERSION}" == "1.6.1" ]]; then
+      mix format mix.exs lib/**/*.{ex,exs} --check-formatted && \
+      mix format mix.exs test/**/*.{ex,exs} --check-formatted
+    fi;
+#  - mix credo --strict --ignore maxlinelength,cyclomaticcomplexity,todo
   - mix test
-#  - mix coveralls
+  - mix coveralls

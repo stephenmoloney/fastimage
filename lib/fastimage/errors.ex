@@ -70,24 +70,31 @@ defmodule Fastimage.Error do
   defp format_error({:unsupported, value}) do
     unsupported_error(value)
   end
+
   defp format_error(:unexpected_binary_streaming_error) do
     binary_streaming_error()
   end
+
   defp format_error({:unexpected_file_streaming_error, filepath}) do
     file_streaming_error(filepath)
   end
+
   defp format_error({:unexpected_http_streaming_error, url, hackney_reason}) do
     streaming_error(url, hackney_reason)
   end
+
   defp format_error({:hackney_response_error, {url, status_code, reason}}) do
     hackney_response_error(url, status_code, reason)
   end
+
   defp format_error({:max_redirects_exceeded, {url, num_redirects, max_redirects}}) do
     max_redirects_error(url, num_redirects, max_redirects)
   end
+
   defp format_error(:invalid_input) do
     invalid_input_error()
   end
+
   defp format_error(reason) do
     unexpected_error(reason)
   end
@@ -123,8 +130,10 @@ defmodule Fastimage.Error do
     Only the types #{Enum.join(@supported_types, ", ")}are currently supported by this library.
     """
   end
+
   defp unsupported_error(extension) do
     extension = String.trim_leading(extension, ".")
+
     """
     The image type #{extension} is currently unsupported.
 
