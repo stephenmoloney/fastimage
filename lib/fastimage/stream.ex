@@ -15,7 +15,7 @@ defmodule Fastimage.Stream do
     @type source_type :: :url | :file | :binary
     @type image_type :: :bmp | :file | :binary
     @type stream_state :: :unstarted | :processing | :done
-    @type stream_ref :: reference() | File.Stream.t() | Enumerable.t()
+    @type stream_ref :: reference() | File.Stream.t() | function()
 
     defstruct source: nil,
               source_type: nil,
@@ -79,6 +79,7 @@ defmodule Fastimage.Stream do
         %Acc{
           source_type: :binary,
           stream_ref: binary_stream,
+          stream_state: :processing,
           num_chunks_to_fetch: num_chunks_to_fetch,
           acc_num_chunks: acc_num_chunks,
           acc_data: acc_data
@@ -95,8 +96,7 @@ defmodule Fastimage.Stream do
           |> Enum.join()
 
         stream_data(%{
-          acc
-          | #                  num_chunks_to_fetch: num_chunks_to_fetch - 1,
+          acc |
             num_chunks_to_fetch: 0,
             acc_num_chunks: acc_num_chunks + num_chunks_to_fetch,
             acc_data: <<acc_data::binary, data::binary>>
@@ -290,10 +290,11 @@ defmodule Fastimage.Stream do
     Stream.resource(
       fn -> binary_data end,
       fn binary_data ->
-        case :erlang.byte_size(binary_data) > @binary_chunk_size do
+        bin_size = :erlang.byte_size(binary_data)
+        case bin_size > @binary_chunk_size do
           true ->
-            chunk = :binary.part(binary_data, 0, @binary_chunk_size)
-            <<_chunk, next_binary_data::binary>> = binary_data
+            chunk = Kernel.binary_part(binary_data, 0, @binary_chunk_size)
+            next_binary_data = Kernel.binary_part(binary_data, @binary_chunk_size, bin_size - @binary_chunk_size)
             {[chunk], next_binary_data}
 
           false ->

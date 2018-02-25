@@ -15,8 +15,7 @@ defmodule Fastimage.Parser do
     Parser.parse_png(data)
   end
 
-  def size(:jpeg, %Stream.Acc{} = acc) do
-    next_data = acc.acc_data
+  def size(:jpeg, %Stream.Acc{acc_data: next_data} = acc) do
     chunk_size = :erlang.byte_size(next_data)
     Parser.parse_jpeg(acc, next_data, chunk_size, :initial)
   end
