@@ -1,32 +1,6 @@
 defmodule Fastimage.Parser do
   @moduledoc false
-  alias Fastimage.{Dimensions, Parser, Stream}
-
-  #  @doc false
-  #  def size("bmp", data, _stream_ref, _source) do
-  #    Parser.parse_bmp(data)
-  #  end
-  #
-  #  def size("gif", data, _stream_ref, _source) do
-  #    Parser.parse_gif(data)
-  #  end
-  #
-  #  def size("png", data, _stream_ref, _source) do
-  #    Parser.parse_png(data)
-  #  end
-  #
-  #  def size("jpeg", data, stream_ref, source) do
-  #    chunk_size = :erlang.byte_size(data)
-  #
-  #    Parser.parse_jpeg(
-  #      stream_ref,
-  #      {1, data, source},
-  #      data,
-  #      0,
-  #      chunk_size,
-  #      :initial
-  #    )
-  #  end
+  alias Fastimage.{Dimensions, Error, Parser, Stream, Utils}
 
   @doc false
   def size(:bmp, %Stream.Acc{acc_data: data}) do
@@ -48,27 +22,27 @@ defmodule Fastimage.Parser do
   end
 
   @doc false
-  #  def parse_jpeg(
-  #        stream_ref,
-  #        {acc_num_chunks, acc_data, url},
-  #        next_data,
-  #        num_chunks_to_fetch,
-  #        chunk_size,
-  #        state
-  #      ) do
-  #  %Acc{
-  #    source: source,
-  #    stream_ref: %File.Stream{} = stream_ref,
-  #    stream_timeout: stream_timeout,
-  #    stream_state: :processing,
-  #    num_chunks_to_fetch: num_chunks_to_fetch,
-  #    acc_num_chunks: acc_num_chunks,
-  #    acc_data: acc_data,
-  #    num_redirects: num_redirects,
-  #    error_retries: error_retries,
-  #    max_redirect_retries: max_redirect_retries,
-  #    max_error_retries: max_error_retries
-  #  } = acc
+  def type(bytes, %Stream.Acc{stream_ref: stream_ref} = acc) do
+    cond do
+      bytes == "BM" ->
+        {:ok, :bmp}
+
+      bytes == "GI" ->
+        {:ok, :gif}
+
+      bytes == <<255, 216>> ->
+        {:ok, :jpeg}
+
+      bytes == <<137>> <> "P" ->
+        {:ok, :png}
+
+      true ->
+        Utils.close_stream(stream_ref)
+        {:error, Error.exception({:unsupported, acc})}
+    end
+  end
+
+  @doc false
   def parse_jpeg(
         %Stream.Acc{
           source: source,
@@ -172,11 +146,12 @@ defmodule Fastimage.Parser do
         %Stream.Acc{
           stream_state: :done
         } = acc,
-        next_data,
+        _next_data,
         _chunk_size,
         _state
       ) do
-    raise("there is no more data to stream")
+    reason = {:unexpected_end_of_stream_error, acc}
+    {:error, Error.exception(reason)}
   end
 
   def parse_jpeg_with_more_data(
@@ -203,10 +178,6 @@ defmodule Fastimage.Parser do
       chunk_size,
       state
     )
-
-    #    <<TODO>>
-    #    close_stream(stream_ref)
-    #    dimensions
   end
 
   @doc false

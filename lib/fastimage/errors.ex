@@ -27,6 +27,9 @@ defmodule Fastimage.Error do
     * `{:unsupported, value}`: may occur when the file type is not supported by Fastimage,
     value can be a url or nil when handling a file or a binary.
 
+    * `:unexpected_end_of_stream_error`: may occur when the end of a stream
+    is reached unexpectedly without having determined the image type.
+
     * `:unexpected_binary_streaming_error`: may occur when an unexpected error
     occurred whilst streaming bytes from a binary.
 
@@ -56,6 +59,7 @@ defmodule Fastimage.Error do
   """
   defexception [:reason]
   @supported_types ["gif", "png", "jpg", "bmp"]
+  alias Fastimage.Stream
 
   def exception(reason) do
     %Fastimage.Error{reason: reason}
@@ -67,8 +71,14 @@ defmodule Fastimage.Error do
 
   # private
 
-  defp format_error({:unsupported, value}) do
-    unsupported_error(value)
+  defp format_error({:unsupported, %Stream.Acc{source_type: source_type} = acc}) do
+    unsupported_error(acc, source_type)
+  end
+
+  defp format_error(
+         {:unexpected_end_of_stream_error, %Stream.Acc{source_type: source_type} = acc}
+       ) do
+    end_of_stream_error(acc, source_type)
   end
 
   defp format_error(:unexpected_binary_streaming_error) do
@@ -99,6 +109,30 @@ defmodule Fastimage.Error do
     unexpected_error(reason)
   end
 
+  defp end_of_stream_error(acc, :binary) do
+    """
+    An unexpected streaming error has occurred.
+
+    All data in the source has been fetched without
+    yet determining an image type.
+
+    Is the source actuallya supported image type?
+    """
+  end
+
+  defp end_of_stream_error(source, source_type)
+       when source_type in [:file, :url] do
+    """
+    An unexpected streaming error has occurred while
+    streaming #{source}.
+
+    All data from #{source} has been fetched without
+    determining an image type.
+
+    Is the source actually supported image type?
+    """
+  end
+
   defp streaming_error(url, hackney_reason) do
     """
     An unexpected http streaming error has occurred while
@@ -123,7 +157,7 @@ defmodule Fastimage.Error do
     """
   end
 
-  defp unsupported_error(nil) do
+  defp unsupported_error(_acc, :binary) do
     """
     The image type is currently unsupported.
 
@@ -131,8 +165,29 @@ defmodule Fastimage.Error do
     """
   end
 
-  defp unsupported_error(extension) do
-    extension = String.trim_leading(extension, ".")
+  defp unsupported_error(acc, :file) do
+    extension =
+      acc.stream_ref.path
+      |> Path.extname()
+      |> String.trim_leading(".")
+
+    """
+    The image type #{extension} is currently unsupported.
+
+    Only the types #{Enum.join(@supported_types, ", ")}are currently supported by this library.
+    """
+  end
+
+  defp unsupported_error(acc, :url) do
+    """
+    The image type is currently unsupported for url #{acc.source}.
+
+    Only the types #{Enum.join(@supported_types, ", ")}are currently supported by this library.
+    """
+  end
+
+  defp unsupported_error(source, :file) do
+    extension = String.trim_leading(source, ".")
 
     """
     The image type #{extension} is currently unsupported.

@@ -1,8 +1,9 @@
 defmodule FastimageTest do
   use ExUnit.Case, async: true
+  doctest Fastimage
 
   @expected_size %Fastimage.Dimensions{width: 283, height: 142}
-  @fastimage_task_timeout 2_500
+  @fastimage_task_timeout 3_000
 
   @jpg_url "https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg"
   @jpg_url_with_query "https://avatars0.githubusercontent.com/u/12668653?v=2&s=40"
@@ -173,14 +174,13 @@ defmodule FastimageTest do
   defp handle_task(task) do
     with {:ok, {:error, error}} <-
            Task.yield(task, @fastimage_task_timeout) || Task.shutdown(task) do
-      Og.log(error, __ENV__, :error)
-      nil
+      {:error, error}
     else
       {:ok, val} ->
         val
 
-      _ ->
-        nil
+      other ->
+        other
     end
   end
 end

@@ -2,7 +2,7 @@
 
 ## Description
 
-Fastimage finds the dimensions/size or file type of a remote or local image file given the file path or uri respectively.
+Fastimage finds the dimensions/size or file type of a remote or local image file given the file path or url respectively.
 It streams the smallest amount of data necessary to ascertain the file size. This aspect is useful when getting the
 file size for very large images.
 
@@ -11,14 +11,32 @@ file size for very large images.
 - Supports `bmp`, `jpeg`, `png` and `gif` files
 - Supports local files by using the file path of the image
 - Supports blobs/objects by using the binary of the image
-- Supports remote files by using the uri of the image
-- Follows up to three redirects for a given uri
-- Yields the file size as a struct `%Fastimage.Dimensions{width: _w, height: _h}`
-- Yields the file type as an atom `:bmp, :jpeg, :gif or :png`
+- Supports remote files by using the url of the image
+- Follows redirects for a given url
+- `Fastimage.info/1` yields the image info as a struct `%Fastimage{}`
+- `Fastimage.size/1` yields the image size as a struct `%Fastimage.Dimensions{width: _w, height: _h}`
+- `Fastimage.type/1` yields the image type as an atom `:bmp, :jpeg, :gif or :png`
 
 ## Examples
 
 ```elixir
+Fastimage.info("https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg")
+# => {:ok,
+#      %Fastimage{
+#        dimensions: %Fastimage.Dimensions{height: 142, width: 283},
+#        image_type: :jpeg,
+#        source: "https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg",
+#        source_type: :url
+#      }}
+
+Fastimage.info!("https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg")
+# => %Fastimage{
+#       dimensions: %Fastimage.Dimensions{height: 142, width: 283},
+#       image_type: :jpeg,
+#       source: "https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg",
+#       source_type: :url
+#     }
+
 Fastimage.type("https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg")
 # => {:ok, :jpeg}
 

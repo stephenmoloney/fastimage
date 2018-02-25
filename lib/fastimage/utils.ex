@@ -2,6 +2,16 @@ defmodule Fastimage.Utils do
   @moduledoc false
 
   @doc false
+  def get_source_type(source) do
+    cond do
+      is_file?(source) -> :file
+      is_url?(source) -> :url
+      is_binary(source) -> :binary
+      true -> :other
+    end
+  end
+
+  @doc false
   def is_url?(url) when is_binary(url) do
     url
     |> URI.parse()

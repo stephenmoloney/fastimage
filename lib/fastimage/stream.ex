@@ -10,10 +10,16 @@ defmodule Fastimage.Stream do
     @default_max_error_retries 5
     @default_max_redirect_retries 3
 
+    @type source_type :: :url | :file | :binary
+    @type image_type :: :bmp | :file | :binary
+    @type stream_state :: :unstarted | :processing | :done
+
     defstruct source: nil,
+              source_type: nil,
               stream_ref: nil,
               stream_timeout: @default_stream_timeout,
               stream_state: :unstarted,
+              image_type: nil,
               num_chunks_to_fetch: 1,
               acc_num_chunks: 0,
               acc_data: <<>>,
@@ -24,9 +30,11 @@ defmodule Fastimage.Stream do
 
     @type t :: %Acc{
             source: binary(),
+            source_type: source_type() | nil,
             stream_ref: reference() | File.Stream.t() | nil,
             stream_timeout: integer(),
-            stream_state: :unstarted | :processing | :done,
+            stream_state: stream_state(),
+            image_type: image_type(),
             num_chunks_to_fetch: integer(),
             acc_num_chunks: integer(),
             acc_data: binary(),
@@ -39,7 +47,13 @@ defmodule Fastimage.Stream do
     @doc false
     def redraw(%Acc{} = existing) do
       redrawn =
-        Map.take(existing, [:source, :stream_timeout, :max_error_retries, :max_redirect_retries])
+        Map.take(existing, [
+          :source,
+          :source_type,
+          :stream_timeout,
+          :max_error_retries,
+          :max_redirect_retries
+        ])
 
       Map.merge(%Acc{}, redrawn)
     end
@@ -48,6 +62,7 @@ defmodule Fastimage.Stream do
   def stream_data(
         %Acc{
           source: source,
+          source_type: :file,
           stream_ref: %File.Stream{} = stream_ref,
           stream_timeout: stream_timeout,
           stream_state: :processing,
@@ -60,18 +75,15 @@ defmodule Fastimage.Stream do
           max_error_retries: max_error_retries
         } = _chunks
       ) do
-    #    stream_ref: nil,
-    #    num_chunks_to_fetch: 1,
-    #    acc_num_chunks: 0,
-    #    acc_data: <<>>,
-    #    source: nil,
-    #    num_redirects: 0,
-    #    error_retries
     :ok
   end
 
   @doc false
-  def stream_data(%Acc{source: source, stream_state: :unstarted} = acc) do
+  def stream_data(%Acc{
+      source: source,
+      source_type: :url,
+      stream_state: :unstarted
+    } = acc) do
     with {:ok, stream_ref} <-
            :hackney.get(source, [], <<>>, [{:async, :once}, {:follow_redirect, true}]) do
       stream_data(%{
@@ -83,6 +95,7 @@ defmodule Fastimage.Stream do
   end
 
   def stream_data(%Acc{
+        source_type: :url,
         stream_state: :processing,
         num_redirects: num_redirects,
         max_redirect_retries: max_redirect_retries
@@ -95,6 +108,7 @@ defmodule Fastimage.Stream do
 
   def stream_data(
         %Acc{
+          source_type: :url,
           stream_ref: stream_ref,
           stream_timeout: stream_timeout,
           stream_state: :processing,
@@ -106,8 +120,7 @@ defmodule Fastimage.Stream do
           max_redirect_retries: _max_redirect_retries,
           max_error_retries: max_error_retries
         } = acc
-      )
-      when is_reference(stream_ref) do
+      ) do
     cond do
       num_chunks_to_fetch == 0 ->
         {:ok, acc}

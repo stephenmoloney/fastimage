@@ -11,20 +11,25 @@ before it returned `map()`. To achieve the same behaviour as before, now
 - `type/1` returns `{:ok, result}` whereas 
 before it returned `result`. To achieve the same behaviour as before, now
 `type!/1` is now available.
+- add options to `type/2`, `size/2` and `info/2` as a second argument 
+to allow manual overrides on the otherwise hard-coded values 
+for `stream_timeout`, `max_redirect_retries` and `max_error_retries`
 
 [changes]
-- Introduce `Fastimage.info/1` function that gets the type and size in a 
-single streaming pass and return a `Fastimage` struct with various infos.
-- Separate structure into 3 modules depending on if type is a binary, url or a file.
 - Separate the parser functions into their own module.
-- Implement callbacks for `size/1`, `type/1`
+- Separate Stream into into own module and create a `%Stream.Acc{}` to
+bring structured format to the stream processing entity.
+- Simplify points of implementation of `Utils.close_stream/1`
 
 [bug fixes]
 - `close_stream` bug fixed where `:hackney` streams were not properly closed. 
 
 [enhancements]
+- Introduce `Fastimage.info/1` function that gets the type and size in a 
+single streaming pass and return a `Fastimage` struct with various infos.
 - Added ability to get size and type for binaries
 - Added Fastimage.Error exception structs for improved error handling
+- Improved readme
 
 ## v0.0.7
 
