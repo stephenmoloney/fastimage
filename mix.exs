@@ -5,7 +5,7 @@ defmodule Fastimage.Mixfile do
   @source "https://github.com/stephenmoloney/fastimage"
   @maintainers ["Stephen Moloney"]
   @elixir_versions ">= 1.4.0"
-  @allowed_hackney_versions ~w|1.6.0 1.7.0 1.8.0 1.9.0 1.10.0|
+  @allowed_hackney_versions ~w|1.6.0 1.7.0 1.8.0 1.9.0|
   @hackney_versions "~> " <> Enum.join(@allowed_hackney_versions, " or ~> ")
 
   def project do

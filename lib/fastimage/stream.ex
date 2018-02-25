@@ -79,11 +79,13 @@ defmodule Fastimage.Stream do
   end
 
   @doc false
-  def stream_data(%Acc{
-      source: source,
-      source_type: :url,
-      stream_state: :unstarted
-    } = acc) do
+  def stream_data(
+        %Acc{
+          source: source,
+          source_type: :url,
+          stream_state: :unstarted
+        } = acc
+      ) do
     with {:ok, stream_ref} <-
            :hackney.get(source, [], <<>>, [{:async, :once}, {:follow_redirect, true}]) do
       stream_data(%{
@@ -94,13 +96,18 @@ defmodule Fastimage.Stream do
     end
   end
 
-  def stream_data(%Acc{
-        source_type: :url,
-        stream_state: :processing,
-        num_redirects: num_redirects,
-        max_redirect_retries: max_redirect_retries
-      })
+  def stream_data(
+        %Acc{
+          source_type: :url,
+          stream_ref: stream_ref,
+          stream_state: :processing,
+          num_redirects: num_redirects,
+          max_redirect_retries: max_redirect_retries
+        } = acc
+      )
       when num_redirects > max_redirect_retries do
+    Utils.close_stream(stream_ref)
+
     raise(
       "error, three redirects have already been attempted, are you sure this is the correct image uri?"
     )
@@ -137,6 +144,7 @@ defmodule Fastimage.Stream do
                     reason
                   }"
 
+                Utils.close_stream(stream_ref)
                 raise(error_msg)
 
               true ->
@@ -169,6 +177,7 @@ defmodule Fastimage.Stream do
             })
 
           _ ->
+            Utils.close_stream(stream_ref)
             raise("error, unexpected streaming error while streaming acc")
         after
           stream_timeout ->
@@ -186,11 +195,13 @@ defmodule Fastimage.Stream do
                 |> stream_data()
 
               false ->
+                Utils.close_stream(stream_ref)
                 raise(error)
             end
         end
 
       true ->
+        Utils.close_stream(stream_ref)
         {:error, :unexpected_http_streaming_error}
     end
   end
