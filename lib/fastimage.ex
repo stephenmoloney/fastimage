@@ -246,10 +246,10 @@ defmodule Fastimage do
       acc
     end
 
-    with {:ok, %Stream.Acc{} = acc} <- Stream.stream_data(acc),
-         bytes <- :erlang.binary_part(acc.acc_data, {0, 2}),
-         {:ok, image_type} <- Parser.type(bytes, acc) do
-      {:ok, %{acc | image_type: image_type}}
+    with {:ok, %Stream.Acc{} = updated_acc} <- Stream.stream_data(acc),
+         bytes <- :erlang.binary_part(updated_acc.acc_data, {0, 2}),
+         {:ok, image_type} <- Parser.type(bytes, updated_acc) do
+      {:ok, %{updated_acc | image_type: image_type}}
     end
   end
 

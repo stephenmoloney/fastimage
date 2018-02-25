@@ -68,7 +68,11 @@ defmodule Fastimage.Stream do
           stream_state: :unstarted
         } = acc
       ) do
-    stream_data(%{acc | stream_ref: binary_stream(source), stream_state: :processing})
+    stream_data(
+      %{acc |
+        stream_ref: binary_stream(source),
+        stream_state: :processing}
+    )
   end
 
   def stream_data(
@@ -93,7 +97,7 @@ defmodule Fastimage.Stream do
         stream_data(%{
           acc
           | #                  num_chunks_to_fetch: num_chunks_to_fetch - 1,
-            num_chunks_to_fetch: num_chunks_to_fetch - 1,
+            num_chunks_to_fetch: 0,
             acc_num_chunks: acc_num_chunks + num_chunks_to_fetch,
             acc_data: <<acc_data::binary, data::binary>>
         })
