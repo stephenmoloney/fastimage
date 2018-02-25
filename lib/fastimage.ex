@@ -246,7 +246,6 @@ defmodule Fastimage do
       acc
     end
 
-
     with {:ok, %Stream.Acc{} = acc} <- Stream.stream_data(acc),
          bytes <- :erlang.binary_part(acc.acc_data, {0, 2}),
          {:ok, image_type} <- Parser.type(bytes, acc) do
@@ -269,7 +268,7 @@ defmodule Fastimage do
     end
   end
 
-  defp maybe_put_option(%Stream.Acc{} = acc, option_key, false) do
+  defp maybe_put_option(%Stream.Acc{} = acc, _option_key, false) do
     acc
   end
 

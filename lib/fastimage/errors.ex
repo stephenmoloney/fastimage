@@ -111,14 +111,14 @@ defmodule Fastimage.Error do
     unexpected_error(reason)
   end
 
-  defp end_of_stream_error(acc, :binary) do
+  defp end_of_stream_error(_acc, :binary) do
     """
     An unexpected streaming error has occurred.
 
     All data in the source has been fetched without
     yet determining an image type.
 
-    Is the source actuallya supported image type?
+    Is the source actually a supported image type?
     """
   end
 

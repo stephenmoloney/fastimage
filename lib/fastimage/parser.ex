@@ -45,17 +45,8 @@ defmodule Fastimage.Parser do
   @doc false
   def parse_jpeg(
         %Stream.Acc{
-          source: source,
-          stream_ref: stream_ref,
-          stream_timeout: stream_timeout,
-          stream_state: stream_state,
           num_chunks_to_fetch: num_chunks_to_fetch,
-          acc_num_chunks: acc_num_chunks,
-          acc_data: acc_data,
-          num_redirects: num_redirects,
-          error_retries: error_retries,
-          max_redirect_retries: max_redirect_retries,
-          max_error_retries: max_error_retries
+          acc_num_chunks: acc_num_chunks
         } = acc,
         next_data,
         chunk_size,
@@ -112,7 +103,9 @@ defmodule Fastimage.Parser do
         case skip >= compare_size do
           true ->
             num_chunks_to_fetch =
-              (acc_num_chunks + Float.ceil(skip / chunk_size)) |> :erlang.round()
+              acc_num_chunks
+              |> Kernel.+(Float.ceil(skip / chunk_size))
+              |> :erlang.round()
 
             parse_jpeg_with_more_data(
               %{acc | num_chunks_to_fetch: num_chunks_to_fetch},

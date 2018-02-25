@@ -65,15 +65,7 @@ defmodule Fastimage.Stream do
         %Acc{
           source: source,
           source_type: :binary,
-          stream_timeout: stream_timeout,
-          stream_state: :unstarted,
-          num_chunks_to_fetch: num_chunks_to_fetch,
-          acc_num_chunks: acc_num_chunks,
-          acc_data: acc_data,
-          num_redirects: num_redirects,
-          error_retries: error_retries,
-          max_redirect_retries: max_redirect_retries,
-          max_error_retries: max_error_retries
+          stream_state: :unstarted
         } = acc
       ) do
     stream_data(%{acc | stream_ref: binary_stream(source), stream_state: :processing})
@@ -81,18 +73,11 @@ defmodule Fastimage.Stream do
 
   def stream_data(
         %Acc{
-          source: source,
           source_type: :binary,
           stream_ref: binary_stream,
-          stream_timeout: stream_timeout,
-          stream_state: :processing,
           num_chunks_to_fetch: num_chunks_to_fetch,
           acc_num_chunks: acc_num_chunks,
-          acc_data: acc_data,
-          num_redirects: num_redirects,
-          error_retries: error_retries,
-          max_redirect_retries: max_redirect_retries,
-          max_error_retries: max_error_retries
+          acc_data: acc_data
         } = acc
       ) do
     cond do
@@ -123,15 +108,7 @@ defmodule Fastimage.Stream do
         %Acc{
           source: source,
           source_type: :file,
-          stream_timeout: stream_timeout,
-          stream_state: :unstarted,
-          num_chunks_to_fetch: num_chunks_to_fetch,
-          acc_num_chunks: acc_num_chunks,
-          acc_data: acc_data,
-          num_redirects: num_redirects,
-          error_retries: error_retries,
-          max_redirect_retries: max_redirect_retries,
-          max_error_retries: max_error_retries
+          stream_state: :unstarted
         } = acc
       ) do
     stream_ref = File.stream!(source, [:read, :compressed], @file_chunk_size)
@@ -140,18 +117,12 @@ defmodule Fastimage.Stream do
 
   def stream_data(
         %Acc{
-          source: source,
           source_type: :file,
           stream_ref: %File.Stream{} = file_stream,
-          stream_timeout: stream_timeout,
           stream_state: :processing,
           num_chunks_to_fetch: num_chunks_to_fetch,
           acc_num_chunks: acc_num_chunks,
-          acc_data: acc_data,
-          num_redirects: num_redirects,
-          error_retries: error_retries,
-          max_redirect_retries: max_redirect_retries,
-          max_error_retries: max_error_retries
+          acc_data: acc_data
         } = acc
       ) do
     cond do
@@ -202,7 +173,7 @@ defmodule Fastimage.Stream do
           stream_state: :processing,
           num_redirects: num_redirects,
           max_redirect_retries: max_redirect_retries
-        } = acc
+        } = _acc
       )
       when num_redirects > max_redirect_retries do
     Utils.close_stream(stream_ref)
