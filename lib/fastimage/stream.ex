@@ -68,11 +68,7 @@ defmodule Fastimage.Stream do
           stream_state: :unstarted
         } = acc
       ) do
-    stream_data(
-      %{acc |
-        stream_ref: binary_stream(source),
-        stream_state: :processing}
-    )
+    stream_data(%{acc | stream_ref: binary_stream(source), stream_state: :processing})
   end
 
   def stream_data(
@@ -96,8 +92,8 @@ defmodule Fastimage.Stream do
           |> Enum.join()
 
         stream_data(%{
-          acc |
-            num_chunks_to_fetch: 0,
+          acc
+          | num_chunks_to_fetch: 0,
             acc_num_chunks: acc_num_chunks + num_chunks_to_fetch,
             acc_data: <<acc_data::binary, data::binary>>
         })
@@ -291,10 +287,14 @@ defmodule Fastimage.Stream do
       fn -> binary_data end,
       fn binary_data ->
         bin_size = :erlang.byte_size(binary_data)
+
         case bin_size > @binary_chunk_size do
           true ->
             chunk = Kernel.binary_part(binary_data, 0, @binary_chunk_size)
-            next_binary_data = Kernel.binary_part(binary_data, @binary_chunk_size, bin_size - @binary_chunk_size)
+
+            next_binary_data =
+              Kernel.binary_part(binary_data, @binary_chunk_size, bin_size - @binary_chunk_size)
+
             {[chunk], next_binary_data}
 
           false ->
