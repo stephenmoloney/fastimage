@@ -168,6 +168,7 @@ defmodule Fastimage.Stream do
 
   def stream_data(
         %Acc{
+          source: source,
           source_type: :url,
           stream_ref: stream_ref,
           stream_state: :processing,
@@ -177,10 +178,8 @@ defmodule Fastimage.Stream do
       )
       when num_redirects > max_redirect_retries do
     Utils.close_stream(stream_ref)
-
-    raise(
-      "error, three redirects have already been attempted, are you sure this is the correct image uri?"
-    )
+    reason = {:max_redirects_exceeded, {source, num_redirects, max_redirect_retries}}
+    {:error, Error.exception(reason)}
   end
 
   def stream_data(
@@ -192,10 +191,7 @@ defmodule Fastimage.Stream do
           num_chunks_to_fetch: num_chunks_to_fetch,
           acc_num_chunks: acc_num_chunks,
           acc_data: acc_data,
-          num_redirects: num_redirects,
-          error_retries: error_retries,
           max_redirect_retries: _max_redirect_retries,
-          max_error_retries: max_error_retries
         } = acc
       ) do
     cond do
@@ -206,73 +202,56 @@ defmodule Fastimage.Stream do
         _next_chunk = :hackney.stream_next(stream_ref)
 
         receive do
-          {:hackney_response, _stream_ref, {:status, status_code, reason}} ->
-            cond do
-              status_code > 400 ->
-                error_msg =
-                  "error, could not open image file with error #{status_code} due to reason, #{
-                    reason
-                  }"
 
-                Utils.close_stream(stream_ref)
-                raise(error_msg)
+          {:hackney_response, stream_ref, {:status, status_code, reason}}
+          when status_code >= 400 ->
+            reason = {:hackney_response_error, {acc.source, status_code, reason}}
+            potential_error = {:error, Error.exception(reason)}
+            maybe_retry_for_errors(%{acc | stream_ref: stream_ref}, potential_error)
 
-              true ->
-                stream_data(acc)
-            end
+          {:hackney_response, stream_ref, {:status, status_code, _reason}}
+          when status_code < 400 ->
+            stream_data(%{acc | stream_ref: stream_ref})
 
-          {:hackney_response, _stream_ref, {:headers, _headers}} ->
-            stream_data(acc)
+          {:hackney_response, stream_ref, {:headers, _headers}} ->
+            stream_data(%{acc | stream_ref: stream_ref})
 
           {:hackney_response, stream_ref, {:redirect, to_url, _headers}} ->
-            Utils.close_stream(stream_ref)
+            retry_for_redirects(%{acc | stream_ref: stream_ref}, to_url)
 
-            acc
-            |> Acc.redraw()
-            |> Map.merge(%{
-              source: to_url,
-              num_redirects: num_redirects + 1
-            })
-            |> stream_data()
+          {:hackney_response, stream_ref, :done} ->
+            stream_data(
+              %{acc |
+                num_chunks_to_fetch: 0,
+                stream_ref: stream_ref,
+                stream_state: :done}
+            )
 
-          {:hackney_response, _stream_ref, :done} ->
-            stream_data(%{acc | num_chunks_to_fetch: 0, stream_state: :done})
-
-          {:hackney_response, _stream_ref, data} ->
+          {:hackney_response, stream_ref, data} ->
             stream_data(%{
               acc
               | num_chunks_to_fetch: num_chunks_to_fetch - 1,
                 acc_num_chunks: acc_num_chunks + 1,
-                acc_data: <<acc_data::binary, data::binary>>
+                acc_data: <<acc_data::binary, data::binary>>,
+                stream_ref: stream_ref,
             })
 
-          _ ->
-            Utils.close_stream(stream_ref)
-            raise("error, unexpected streaming error while streaming acc")
+          unexpected_reply ->
+            reason = {:unexpected_http_streaming_error, acc.source, unexpected_reply}
+            potential_error = {:error, Error.exception(reason)}
+            maybe_retry_for_errors(acc, potential_error)
+
         after
           stream_timeout ->
-            error = "error, uri stream timeout #{stream_timeout} exceeded too many times"
-
-            case error_retries < max_error_retries do
-              true ->
-                Utils.close_stream(stream_ref)
-
-                acc
-                |> Acc.redraw()
-                |> Map.merge(%{
-                  error_retries: error_retries + 1
-                })
-                |> stream_data()
-
-              false ->
-                Utils.close_stream(stream_ref)
-                raise(error)
-            end
+            reason = {:unexpected_http_streaming_error, acc.source}
+            potential_error = {:error, Error.exception(reason)}
+            maybe_retry_for_errors(acc, potential_error)
         end
 
       true ->
-        Utils.close_stream(stream_ref)
-        {:error, :unexpected_http_streaming_error}
+        reason = {:error, :unexpected_http_streaming_error}
+        potential_error = {:error, Error.exception(reason)}
+        maybe_retry_for_errors(acc, potential_error)
     end
   end
 
@@ -304,5 +283,45 @@ defmodule Fastimage.Stream do
       end,
       fn _last_chunk -> :ok end
     )
+  end
+
+  defp maybe_retry_for_errors(
+         %Acc{
+            stream_ref: stream_ref,
+            error_retries: error_retries,
+            max_error_retries: max_error_retries
+         } = acc,
+         error
+       ) do
+    if error_retries <= max_error_retries do
+      retry_for_errors(acc)
+    else
+      Utils.close_stream(stream_ref)
+      error
+    end
+  end
+
+  defp retry_for_redirects(
+         %Acc{num_redirects: num_redirects, stream_ref: stream_ref} = acc,
+         to_url
+       ) do
+    Utils.close_stream(stream_ref)
+
+    acc
+    |> Acc.redraw()
+    |> Map.merge(%{
+      source: to_url,
+      num_redirects: num_redirects + 1
+    })
+    |> stream_data()
+  end
+
+  defp retry_for_errors(%Acc{error_retries: error_retries} = acc) do
+    acc
+    |> Acc.redraw()
+    |> Map.merge(%{
+      error_retries: error_retries + 1
+    })
+    |> stream_data()
   end
 end
