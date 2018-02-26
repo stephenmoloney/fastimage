@@ -12,11 +12,11 @@ defmodule Fastimage do
             dimensions: %Dimensions{}
 
   @type t :: %Fastimage{
-               source: binary() | nil,
-               source_type: source_type() | nil,
-               image_type: image_type() | nil,
-               dimensions: Dimensions.t()
-             }
+          source: binary() | nil,
+          source_type: source_type() | nil,
+          image_type: image_type() | nil,
+          dimensions: Dimensions.t()
+        }
 
   @doc ~S"""
   Returns the type of image. Accepts a source as a url, binary
@@ -55,8 +55,11 @@ defmodule Fastimage do
     case Utils.get_source_type(source) do
       :other ->
         {:error, %Error{reason: :invalid_input}}
-     source_type ->
-        {:ok, %Stream.Acc{image_type: type, stream_ref: stream_ref}} = get_acc_with_type(source, source_type, opts)
+
+      source_type ->
+        {:ok, %Stream.Acc{image_type: type, stream_ref: stream_ref}} =
+          get_acc_with_type(source, source_type, opts)
+
         Utils.close_stream(stream_ref)
         {:ok, type}
     end
@@ -125,14 +128,15 @@ defmodule Fastimage do
 
   """
   @spec info(binary()) :: {:ok, Fastimage.t()} | {:error, Error.t()}
-    def info(source, opts \\ []) when is_binary(source) do
-      case Utils.get_source_type(source) do
-        :other ->
-          {:error, %Error{reason: :invalid_input}}
-        source_type ->
-          info(source, source_type, opts)
-      end
+  def info(source, opts \\ []) when is_binary(source) do
+    case Utils.get_source_type(source) do
+      :other ->
+        {:error, %Error{reason: :invalid_input}}
+
+      source_type ->
+        info(source, source_type, opts)
     end
+  end
 
   @doc """
   Returns a `%Fastimage{}` struct with information such as
@@ -237,14 +241,14 @@ defmodule Fastimage do
     }
 
     acc =
-    if source_type == :url do
-      acc
-      |> maybe_put_option(:stream_timeout, stream_timeout)
-      |> maybe_put_option(:max_error_retries, max_error_retries)
-      |> maybe_put_option(:max_redirect_retries, max_redirect_retries)
-    else
-      acc
-    end
+      if source_type == :url do
+        acc
+        |> maybe_put_option(:stream_timeout, stream_timeout)
+        |> maybe_put_option(:max_error_retries, max_error_retries)
+        |> maybe_put_option(:max_redirect_retries, max_redirect_retries)
+      else
+        acc
+      end
 
     with {:ok, %Stream.Acc{} = updated_acc} <- Stream.stream_data(acc),
          bytes <- :erlang.binary_part(updated_acc.acc_data, {0, 2}),
@@ -254,17 +258,18 @@ defmodule Fastimage do
   end
 
   defp info(source, source_type, opts) do
-    with {:ok, %Stream.Acc{image_type: type} = acc} <- get_acc_with_type(source, source_type, opts),
+    with {:ok, %Stream.Acc{image_type: type} = acc} <-
+           get_acc_with_type(source, source_type, opts),
          {:ok, %Dimensions{} = size} = Parser.size(type, acc) do
       Utils.close_stream(acc.stream_ref)
 
       {:ok,
-        %Fastimage{
-          source: source,
-          source_type: source_type,
-          image_type: type,
-          dimensions: size
-        }}
+       %Fastimage{
+         source: source,
+         source_type: source_type,
+         image_type: type,
+         dimensions: size
+       }}
     end
   end
 

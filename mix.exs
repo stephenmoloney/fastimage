@@ -73,7 +73,13 @@ defmodule Fastimage.Mixfile do
 
   defp aliases do
     [
-      prep: ["clean", "format #{format_args()}", "compile", "credo #{credo_args()}"]
+      prep: [
+        "clean",
+        "format #{format_args(:lib)}",
+        "format #{format_args(:test)}",
+        "compile",
+        "credo #{credo_args()}"
+      ]
     ]
   end
 
@@ -81,8 +87,12 @@ defmodule Fastimage.Mixfile do
     "--strict --ignore maxlinelength,cyclomaticcomplexity,todo"
   end
 
-  defp format_args do
-    "mix.exs lib/**/*.{ex,exs}test/**/*.{ex,exs}"
+  defp format_args(:lib) do
+    "mix.exs lib/**/*.{ex,exs}"
+  end
+
+  defp format_args(:test) do
+    "mix.exs test/**/*.{ex,exs}"
   end
 
   def coveralls do

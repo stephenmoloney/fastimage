@@ -191,7 +191,7 @@ defmodule Fastimage.Stream do
           num_chunks_to_fetch: num_chunks_to_fetch,
           acc_num_chunks: acc_num_chunks,
           acc_data: acc_data,
-          max_redirect_retries: _max_redirect_retries,
+          max_redirect_retries: _max_redirect_retries
         } = acc
       ) do
     cond do
@@ -202,7 +202,6 @@ defmodule Fastimage.Stream do
         _next_chunk = :hackney.stream_next(stream_ref)
 
         receive do
-
           {:hackney_response, stream_ref, {:status, status_code, reason}}
           when status_code >= 400 ->
             reason = {:hackney_response_error, {acc.source, status_code, reason}}
@@ -220,12 +219,12 @@ defmodule Fastimage.Stream do
             retry_for_redirects(%{acc | stream_ref: stream_ref}, to_url)
 
           {:hackney_response, stream_ref, :done} ->
-            stream_data(
-              %{acc |
-                num_chunks_to_fetch: 0,
+            stream_data(%{
+              acc
+              | num_chunks_to_fetch: 0,
                 stream_ref: stream_ref,
-                stream_state: :done}
-            )
+                stream_state: :done
+            })
 
           {:hackney_response, stream_ref, data} ->
             stream_data(%{
@@ -233,14 +232,13 @@ defmodule Fastimage.Stream do
               | num_chunks_to_fetch: num_chunks_to_fetch - 1,
                 acc_num_chunks: acc_num_chunks + 1,
                 acc_data: <<acc_data::binary, data::binary>>,
-                stream_ref: stream_ref,
+                stream_ref: stream_ref
             })
 
           unexpected_reply ->
             reason = {:unexpected_http_streaming_error, acc.source, unexpected_reply}
             potential_error = {:error, Error.exception(reason)}
             maybe_retry_for_errors(acc, potential_error)
-
         after
           stream_timeout ->
             reason = {:unexpected_http_streaming_error, acc.source}
@@ -287,9 +285,9 @@ defmodule Fastimage.Stream do
 
   defp maybe_retry_for_errors(
          %Acc{
-            stream_ref: stream_ref,
-            error_retries: error_retries,
-            max_error_retries: max_error_retries
+           stream_ref: stream_ref,
+           error_retries: error_retries,
+           max_error_retries: max_error_retries
          } = acc,
          error
        ) do
