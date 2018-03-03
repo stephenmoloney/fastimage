@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.0-rc2
+
+[changes]
+
+- remove og dep, forgot to remove it.
+
 ## v1.0.0-rc1
 
 [breaking changes]
