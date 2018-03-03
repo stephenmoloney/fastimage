@@ -1,285 +1,283 @@
 defmodule Fastimage do
-  @file_chunk_size 500
-  @stream_timeout 5000
-  @max_error_retries 5
+  @moduledoc false
+  alias __MODULE__
+  alias Fastimage.{Dimensions, Error, Parser, Stream, Utils}
 
-  @typep recv_error :: :timeout | :no_file_found | :no_file_or_url_found | any
-  @typep stream_ref :: reference | File.Stream
+  @type image_type :: :bmp | :gif | :jpeg | :png
+  @type source_type :: :url | :file | :binary
 
+  defstruct source: nil,
+            source_type: nil,
+            image_type: nil,
+            dimensions: %Dimensions{}
 
-  @doc ~S"""
-  Returns the type of file. Only "bmp", "gif", "jpeg" or "png" files are currently detected.
-  """
-  @spec type(url_or_file :: String.t) :: String.t | :unknown_type
-  def type(url_or_file) do
-    {:ok, data, stream_ref} = recv(url_or_file)
-    bytes = :erlang.binary_part(data, {0, 2})
-    type(bytes, stream_ref, [close_stream: :true])
-  end
-  defp type(bytes, stream_ref, opts) do
-    case Keyword.get(opts, :close_stream, :false) do
-      :true -> close_stream(stream_ref)
-      :false -> :ok
-    end
-    cond do
-      bytes == "BM" -> "bmp"
-      bytes == "GI" -> "gif"
-      bytes == <<255, 216>> -> "jpeg"
-      bytes == (<<137>> <> "P") -> "png"
-      :true -> :unknown_type
-    end
-  end
-
+  @type t :: %Fastimage{
+          source: binary() | nil,
+          source_type: source_type() | nil,
+          image_type: image_type() | nil,
+          dimensions: Dimensions.t()
+        }
 
   @doc ~S"""
-  Returns the dimensions of the image as a map in the form `%{width: _w, height: _h}`. Supports "bmp", "gif", "jpeg"
-  or "png" image files only. Returns :unknown_type if the image file type is not supported.
+  Returns the type of image. Accepts a source as a url, binary
+  object or file path.
+
+  Supports ".bmp", ".gif", ".jpeg" or ".png" image types only.
+
+  ## Options
+
+    * `:stream_timeout` - Applies to a url only.
+    An override for the after `:stream_timeout` field
+    in the `Fastimage.Stream.Acc` struct which in turn determines the timeout in the
+    processing of the hackney stream. By default the @default_stream_timeout
+    is used in `Fastimage.Stream.Acc`.
+
+    * `:max_error_retries` - Applies to a url only.
+    An override for the `:max_error_retries` field
+    in the `Fastimage.Stream.Acc` struct which in turn determines the maximum number
+    of retries that will be attempted before giving up and returning an error.
+    By default the @default_max_error_retries is used in `Fastimage.Stream.Acc`.
+
+    * `:max_redirect_retries` - Applies to a url only.
+    An override for the `:max_redirect_retries` field
+    in the `Fastimage.Stream.Acc` struct which in turn determines the maximum number
+    of redirects that will be attempted before giving up and returning an error.
+    By default the @default_max_redirect_retries is used in `Fastimage.Stream.Acc`.
+
+  ## Example
+
+      iex> Fastimage.type("https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg")
+      {:ok, :jpeg}
+
   """
-  @spec size(url_or_file :: String.t) :: map | :unknown_type
-  def size(url_or_file) do
-    {:ok, data, stream_ref} = recv(url_or_file)
-    bytes = :erlang.binary_part(data, {0, 2})
-    type = type(bytes, stream_ref, [close_stream: :false])
-    %{width: w, height: h} = size(type, data, stream_ref, url_or_file)
-    close_stream(stream_ref)
-    %{width: w, height: h}
-  end
+  @spec type(binary()) :: {:ok, image_type()} | {:error, Error.t()}
+  def type(source, opts \\ []) when is_binary(source) do
+    case Utils.get_source_type(source) do
+      :other ->
+        {:error, %Error{reason: :invalid_input}}
 
+      source_type ->
+        {:ok, %Stream.Acc{image_type: type, stream_ref: stream_ref}} =
+          get_acc_with_type(source, source_type, opts)
 
-  # private or docless
-
-
-  defp size("bmp", data, _stream_ref, _url), do: parse_bmp(data)
-  defp size("gif", data, _stream_ref, _url), do: parse_gif(data)
-  defp size("png", data, _stream_ref, _url), do: parse_png(data)
-  defp size("jpeg", data, stream_ref, url) do
-    chunk_size = :erlang.byte_size(data)
-    parse_jpeg(stream_ref, {1, data, url}, data, 0, chunk_size, :initial)
-  end
-  defp size(:unknown_type, _data, _stream_ref, _url), do: :unknown_type
-
-
-  @spec recv(url_or_file :: String.t | URI.t) ::  {:ok, binary, stream_ref} | {:error, recv_error}
-  defp recv(url_or_file) do
-    {:ok, _data, _stream_ref} =
-    cond do
-      is_url(url_or_file) == :true -> recv(url_or_file, :url, 0, 0)
-      File.exists?(url_or_file) == :true -> recv(url_or_file, :file)
-      File.exists?(url_or_file) == :false -> {:error, :no_file_found}
-      :true -> {:error, :no_file_or_url_found}
-    end
-  end
-  defp recv(_url, :url, num_redirects, _error_retries) when num_redirects > 3 do
-    raise("error, three redirects have already been attempted, are you sure this is the correct image uri?")
-  end
-  defp recv(url, :url, num_redirects, error_retries) do
-    {:ok, stream_ref} = :hackney.get(url, [], <<>>, [{:async, :once}, {:follow_redirect, true}])
-    stream_chunks(stream_ref, 1, {0, <<>>, url}, num_redirects, error_retries) # returns {:ok, data, ref}
-  end
-  defp recv(file_path, :file) do
-    case File.exists?(file_path) do
-      :true ->
-        stream_ref = File.stream!(file_path, [:read, :compressed, :binary], @file_chunk_size)
-        stream_chunks(stream_ref, 1, {0, <<>>, file_path}, 0, 0) # {:ok, data, file_stream}
-      :false ->
-        {:error, :file_not_found}
+        Utils.close_stream(stream_ref)
+        {:ok, type}
     end
   end
 
+  @doc ~S"""
+  Returns the type of image. Accepts a source as a url, binary
+  object or file path.
 
-  defp stream_chunks(stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data, url}, num_redirects, error_retries) when is_reference(stream_ref) do
-    cond do
-      num_chunks_to_fetch == 0 ->
-        {:ok, acc_data, stream_ref}
-      num_chunks_to_fetch > 0 ->
-        _next_chunk = :hackney.stream_next(stream_ref)
-        receive do
-          {:hackney_response, stream_ref, {:status, status_code, reason}} ->
-            cond do
-              status_code > 400 ->
-                error_msg = "error, could not open image file with error #{status_code} due to reason, #{reason}"
-                close_stream(stream_ref)
-                raise(error_msg)
-              :true ->
-                stream_chunks(stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data, url}, num_redirects, error_retries)
-            end
-          {:hackney_response, stream_ref, {:headers, _headers}} ->
-            stream_chunks(stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data, url}, num_redirects, error_retries)
-          {:hackney_response, stream_ref, {:redirect, to_url, _headers}} ->
-            close_stream(stream_ref)
-            recv(to_url, :url, num_redirects + 1, error_retries)
-          {:hackney_response, stream_ref, :done} ->
-            {:ok, acc_data, stream_ref}
-          {:hackney_response, stream_ref, data} ->
-            stream_chunks(stream_ref, num_chunks_to_fetch - 1, {acc_num_chunks + 1, <<acc_data::binary, data::binary>>, url}, num_redirects, error_retries)
-          _ ->
-            raise("error, unexpected streaming error while streaming chunks")
-        after @stream_timeout ->
-          error = "error, uri stream timeout #{@stream_timeout} exceeded too many times"
-          case error_retries < @max_error_retries do
-            :true ->
-              close_stream(stream_ref)
-              recv(url, :url, num_redirects, error_retries + 1)
-            :false ->
-              raise(error)
-          end
-        end
-      :true -> {:error, :unexpected_http_streaming_error}
-    end
-  end
-  defp stream_chunks(%File.Stream{} = stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data, file_path}, 0, 0) do
-    cond do
-      num_chunks_to_fetch == 0 ->
-        {:ok, acc_data, stream_ref}
-      num_chunks_to_fetch > 0 ->
-        data = Enum.slice(stream_ref, acc_num_chunks, num_chunks_to_fetch)
-        |> Enum.join()
-        stream_chunks(stream_ref, 0, {acc_num_chunks + num_chunks_to_fetch, <<acc_data::binary, data::binary>>, file_path}, 0, 0)
-      :true -> {:error, :unexpected_file_streaming_error}
+  Supports ".bmp", ".gif", ".jpeg" or ".png" image types only.
+
+  ## Options - see `type/1`
+
+  ## Example
+
+      iex> Fastimage.type!("https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg")
+      :jpeg
+
+  """
+  @spec type!(binary()) :: image_type() | no_return()
+  def type!(source, opts \\ []) when is_binary(source) do
+    case type(source, opts) do
+      {:ok, type} -> type
+      {:error, %Error{} = error} -> raise(error)
+      {:error, reason} -> raise(Error, reason)
     end
   end
 
+  @doc """
+  Returns a `%Fastimage{}` struct with information such as
+  type and dimensions. Accepts a source as a url, binary
+  object or file path.
 
-  defp parse_jpeg(stream_ref, {acc_num_chunks, acc_data, url}, next_data, num_chunks_to_fetch, chunk_size, state) do
+  Supports ".bmp", ".gif", ".jpeg" or ".png" image types only.
 
-    if :erlang.byte_size(next_data) < 4 do # get more data if less that 4 bytes remaining
-      new_num_chunks_to_fetch = acc_num_chunks + 2
-      parse_jpeg_with_more_data(stream_ref, {acc_num_chunks, acc_data, url}, next_data, new_num_chunks_to_fetch, chunk_size, state)
-    end
+  ## Options
 
-    case state do
-      :initial ->
-        skip = 2
-        next_bytes = :erlang.binary_part(next_data, {skip, :erlang.byte_size(next_data) - skip})
-        parse_jpeg(stream_ref, {acc_num_chunks, acc_data, url}, next_bytes, num_chunks_to_fetch, chunk_size, :start)
+    * `:stream_timeout` - Applies to a url only.
+    An override for the after `:stream_timeout` field
+    in the `Fastimage.Stream.Acc` struct which in turn determines the timeout in the
+    processing of the hackney stream. By default the @default_stream_timeout
+    is used in `Fastimage.Stream.Acc`.
 
-      :start ->
-        next_bytes = next_bytes_until_match(<<255>>, next_data)
-        parse_jpeg(stream_ref, {acc_num_chunks, acc_data, url}, next_bytes, num_chunks_to_fetch, chunk_size, :sof)
+    * `:max_error_retries` - Applies to a url only.
+    An override for the `:max_error_retries` field
+    in the `Fastimage.Stream.Acc` struct which in turn determines the maximum number
+    of retries that will be attempted before giving up and returning an error.
+    By default the @default_max_error_retries is used in `Fastimage.Stream.Acc`.
 
-      :sof ->
-        <<next_byte::8, next_bytes::binary>> = next_data
-        cond do
-          :true == (next_byte == 225) ->
-            # TODO - add option for exif information parsing here
-            parse_jpeg(stream_ref, {acc_num_chunks, acc_data, url}, next_bytes, num_chunks_to_fetch, chunk_size, :skip)
-          :true == (next_byte in (224..239)) ->
-            parse_jpeg(stream_ref, {acc_num_chunks, acc_data, url}, next_bytes, num_chunks_to_fetch, chunk_size, :skip)
-          :true == [(192..195), (197..199), (201..203), (205..207)] |>
-                   Enum.any?(fn(range) -> next_byte in range end) ->
-            parse_jpeg(stream_ref, {acc_num_chunks, acc_data, url}, next_bytes, num_chunks_to_fetch, chunk_size, :read)
-          :true == (next_byte == 255) ->
-            parse_jpeg(stream_ref, {acc_num_chunks, acc_data, url}, next_bytes, num_chunks_to_fetch, chunk_size, :sof)
-          :true ->
-            parse_jpeg(stream_ref, {acc_num_chunks, acc_data, url}, next_bytes, num_chunks_to_fetch, chunk_size, :skip)
-        end
+    * `:max_redirect_retries` - Applies to a url only.
+    An override for the `:max_redirect_retries` field
+    in the `Fastimage.Stream.Acc` struct which in turn determines the maximum number
+    of redirects that will be attempted before giving up and returning an error.
+    By default the @default_max_redirect_retries is used in `Fastimage.Stream.Acc`.
 
+  ## Example
 
-      :skip ->
-        <<u_int::unsigned-integer-size(16), next_bytes::binary>> = next_data
-        skip = (u_int - 2)
-        next_data_size = :erlang.byte_size(next_data)
+      iex> Fastimage.info("https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg")
+      {:ok,
+        %Fastimage{
+         dimensions: %Fastimage.Dimensions{height: 142, width: 283},
+         image_type: :jpeg,
+         source: "https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg",
+         source_type: :url
+        }}
 
-        case skip >= (next_data_size - 10) do
-          :true ->
-            num_chunks_to_fetch = (acc_num_chunks + Float.ceil(skip/chunk_size)) |> :erlang.round()
-            parse_jpeg_with_more_data(stream_ref, {acc_num_chunks, acc_data, url}, next_data, num_chunks_to_fetch, chunk_size, :skip)
-          :false ->
-            next_bytes = :erlang.binary_part(next_bytes, {skip, :erlang.byte_size(next_bytes) - skip})
-            parse_jpeg(stream_ref, {acc_num_chunks, acc_data, url}, next_bytes, num_chunks_to_fetch, chunk_size, :start)
-        end
+  """
+  @spec info(binary()) :: {:ok, Fastimage.t()} | {:error, Error.t()}
+  def info(source, opts \\ []) when is_binary(source) do
+    case Utils.get_source_type(source) do
+      :other ->
+        {:error, %Error{reason: :invalid_input}}
 
-      :read ->
-        next_bytes = :erlang.binary_part(next_data, {3, :erlang.byte_size(next_data) - 3})
-        <<height::unsigned-integer-size(16), next_bytes::binary>> = next_bytes
-        <<width::unsigned-integer-size(16), _next_bytes::binary>> = next_bytes
-        %{width: width, height: height}
+      source_type ->
+        info(source, source_type, opts)
     end
   end
 
+  @doc """
+  Returns a `%Fastimage{}` struct with information such as
+  type and dimensions. Accepts a source as a url, binary
+  object or file path.
 
-  defp parse_jpeg_with_more_data(stream_ref, {acc_num_chunks, acc_data, url}, next_data, num_chunks_to_fetch, chunk_size, state) do
-    {:ok, new_acc_data, _stream_ref} = stream_chunks(stream_ref, num_chunks_to_fetch, {acc_num_chunks, acc_data, url}, 0, 0)
-    num_bytes_old_data = :erlang.byte_size(acc_data) - :erlang.byte_size(next_data)
-    new_next_data = :erlang.binary_part(new_acc_data, {num_bytes_old_data, :erlang.byte_size(new_acc_data) - num_bytes_old_data})
-    parse_jpeg(stream_ref, {acc_num_chunks + num_chunks_to_fetch, new_acc_data, url}, new_next_data, 0, chunk_size, state)
-  end
+  Supports ".bmp", ".gif", ".jpeg" or ".png" image types only.
 
+  ## Options - see `info/1`
 
-  defp parse_png(data) do
-    next_bytes = :erlang.binary_part(data, {16, 8})
-    <<width::unsigned-integer-size(32), next_bytes::binary>> = next_bytes
-    <<height::unsigned-integer-size(32), _next_bytes::binary>> = next_bytes
-    %{width: width, height: height}
-  end
+  ## Example
 
+      iex> Fastimage.info!("https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg")
+      %Fastimage{
+        dimensions: %Fastimage.Dimensions{height: 142, width: 283},
+        image_type: :jpeg,
+        source: "https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg",
+        source_type: :url
+      }
 
-  defp parse_gif(data) do
-    next_bytes = :erlang.binary_part(data, {6, 4})
-    <<width::little-unsigned-integer-size(16), rest::binary>> = next_bytes
-    <<height::little-unsigned-integer-size(16), _rest::binary>> = rest
-    %{width: width, height: height}
-  end
-
-
-  defp parse_bmp(data) do
-    new_bytes = :erlang.binary_part(data, {14, 14})
-    <<char::8, _rest::binary>> = new_bytes
-    %{width: width, height: height} =
-    case char do
-      40 ->
-         part = :erlang.binary_part(new_bytes, {4, :erlang.byte_size(new_bytes) - 5})
-         <<width::little-unsigned-integer-size(32), rest::binary>> = part
-         <<height::little-unsigned-integer-size(32), _rest::binary>> = rest
-         %{width: width, height: height}
-      _ ->
-         part = :erlang.binary_part(new_bytes, {4, 8})
-         <<width::native-unsigned-integer-size(16), rest::binary>> = part
-         <<height::native-unsigned-integer-size(16), _rest::binary>> = rest
-         %{width: width, height: height}
-    end
-    %{width: width, height: height}
-  end
-
-
-  defp next_bytes_until_match(byte, bytes) do
-    case matching_byte(byte, bytes) do
-      :true -> next_bytes(byte, bytes)
-      :false ->
-        <<_discarded_byte, next_bytes::binary>> = bytes
-        next_bytes_until_match(byte, next_bytes)
+  """
+  @spec info!(binary()) :: Fastimage.t() | no_return()
+  def info!(source, opts \\ []) when is_binary(source) do
+    case info(source, opts) do
+      {:ok, info} -> info
+      {:error, %Error{} = error} -> raise(error)
+      {:error, reason} -> raise(Error, reason)
     end
   end
 
+  @doc """
+  Returns the dimensions of the image. Accepts a source as a url, binary
+  object or file path.
 
-  defp matching_byte(<<byte?>>, bytes) do
-    <<first_byte, _next_bytes::binary>> = bytes
-    first_byte == byte?
+  Supports ".bmp", ".gif", ".jpeg" or ".png" image types only.
+
+  ## Options
+
+    * `:stream_timeout` - Applies to a url only.
+    An override for the after `:stream_timeout` field
+    in the `Fastimage.Stream.Acc` struct which in turn determines the timeout in the
+    processing of the hackney stream. By default the @default_stream_timeout
+    is used in `Fastimage.Stream.Acc`.
+
+    * `:max_error_retries` - Applies to a url only.
+    An override for the `:max_error_retries` field
+    in the `Fastimage.Stream.Acc` struct which in turn determines the maximum number
+    of retries that will be attempted before giving up and returning an error.
+    By default the @default_max_error_retries is used in `Fastimage.Stream.Acc`.
+
+    * `:max_redirect_retries` - Applies to a url only.
+    An override for the `:max_redirect_retries` field
+    in the `Fastimage.Stream.Acc` struct which in turn determines the maximum number
+    of redirects that will be attempted before giving up and returning an error.
+    By default the @default_max_redirect_retries is used in `Fastimage.Stream.Acc`.
+
+  ## Example
+
+      iex> Fastimage.size("https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg")
+      {:ok, %Fastimage.Dimensions{height: 142, width: 283}}
+
+  """
+  @spec size(binary()) :: {:ok, Dimensions.t()} | {:error, Error.t()}
+  def size(source, opts \\ []) when is_binary(source) do
+    with {:ok, %Fastimage{dimensions: %Fastimage.Dimensions{} = dimensions}} <- info(source, opts) do
+      {:ok, dimensions}
+    end
   end
 
+  @doc """
+  Returns the dimensions of the image. Accepts a source as a url, binary
+  object or file path.
 
-  defp next_bytes(_byte, bytes) do
-    <<_byte, next_bytes::binary>> = bytes
-    next_bytes
+  Supports ".bmp", ".gif", ".jpeg" or ".png" image types only.
+
+  ## Options - see `size/1`
+
+  ## Example
+
+      iex> Fastimage.size!("https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg")
+      %Fastimage.Dimensions{height: 142, width: 283}
+  """
+  @spec size!(binary()) :: Dimensions.t() | no_return()
+  def size!(source, opts \\ []) when is_binary(source) do
+    case size(source, opts) do
+      {:ok, dimensions} -> dimensions
+      {:error, %Error{} = error} -> raise(error)
+      {:error, reason} -> raise(Error, reason)
+    end
   end
 
+  # private
 
-  defp is_url(url) when is_binary(url), do: (try do is_url(URI.parse(url)) rescue _error -> :false end)
-  defp is_url(%URI{scheme: :nil}), do: :false
-  defp is_url(%URI{host: :nil}), do: :false
-  defp is_url(%URI{path: :nil}), do: :false
-  defp is_url(%URI{}), do: :true
+  defp get_acc_with_type(source, source_type, opts) do
+    stream_timeout = Keyword.get(opts, :stream_timeout, false)
+    max_error_retries = Keyword.get(opts, :max_error_retries, false)
+    max_redirect_retries = Keyword.get(opts, :max_redirect_retries, false)
 
+    acc = %Stream.Acc{
+      source: source,
+      source_type: source_type
+    }
 
-  defp close_stream(stream_ref) when is_reference(stream_ref) do
-    :hackney.cancel_request(stream_ref)
-    :hackney.close(stream_ref)
+    acc =
+      if source_type == :url do
+        acc
+        |> maybe_put_option(:stream_timeout, stream_timeout)
+        |> maybe_put_option(:max_error_retries, max_error_retries)
+        |> maybe_put_option(:max_redirect_retries, max_redirect_retries)
+      else
+        acc
+      end
+
+    with {:ok, %Stream.Acc{} = updated_acc} <- Stream.stream_data(acc),
+         bytes <- :erlang.binary_part(updated_acc.acc_data, {0, 2}),
+         {:ok, image_type} <- Parser.type(bytes, updated_acc) do
+      {:ok, %{updated_acc | image_type: image_type}}
+    end
   end
 
+  defp info(source, source_type, opts) do
+    with {:ok, %Stream.Acc{image_type: type} = acc} <-
+           get_acc_with_type(source, source_type, opts),
+         {:ok, %Dimensions{} = size} = Parser.size(type, acc) do
+      Utils.close_stream(acc.stream_ref)
 
-  defp close_stream(%File.Stream{} = stream_ref) do
-    File.close(stream_ref.path)
+      {:ok,
+       %Fastimage{
+         source: source,
+         source_type: source_type,
+         image_type: type,
+         dimensions: size
+       }}
+    end
   end
 
+  defp maybe_put_option(%Stream.Acc{} = acc, _option_key, false) do
+    acc
+  end
 
+  defp maybe_put_option(%Stream.Acc{} = acc, option_key, option_val) do
+    Map.put(acc, option_key, option_val)
+  end
 end
