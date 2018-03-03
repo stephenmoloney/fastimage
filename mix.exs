@@ -1,7 +1,7 @@
 defmodule Fastimage.Mixfile do
   use Mix.Project
   @name "Fastimage"
-  @version "1.0.0-rc1"
+  @version "1.0.0-rc2"
   @source "https://github.com/stephenmoloney/fastimage"
   @maintainers ["Stephen Moloney"]
   @elixir_versions ">= 1.4.0"
@@ -38,7 +38,6 @@ defmodule Fastimage.Mixfile do
   defp deps do
     [
       {:hackney, @hackney_versions},
-      {:og, "~> 1.0"},
 
       # dev/test only
       {:excoveralls, "~> 0.8.0", only: [:test], runtime: false},
