@@ -1,5 +1,11 @@
 defmodule Fastimage do
-  @moduledoc false
+  @moduledoc """
+  Fastimage finds the dimensions/size or file type of a remote url,
+  local image file or a binary object given the url, file path or
+  binary itself respectively.
+
+  It streams the smallest amount of data necessary to ascertain the file size.
+  """
   alias __MODULE__
   alias Fastimage.{Dimensions, Error, Parser, Stream, Utils}
 
