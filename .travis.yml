@@ -28,5 +28,4 @@ script:
       mix format mix.exs test/**/*.{ex,exs} --check-formatted
     fi;
   - mix credo --strict --ignore maxlinelength,cyclomaticcomplexity,todo
-  - mix test
-  - mix coveralls
+  - mix coveralls.travis

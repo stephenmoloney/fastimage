@@ -8,3 +8,4 @@ bench/snapshots/
 .idea
 .notes
 doc
+.tool-versions
