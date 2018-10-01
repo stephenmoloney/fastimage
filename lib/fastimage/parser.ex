@@ -1,6 +1,7 @@
 defmodule Fastimage.Parser do
   @moduledoc false
   alias Fastimage.{Dimensions, Error, Parser, Stream, Utils}
+  use Bitwise
 
   @doc false
   def size(:bmp, %Stream.Acc{acc_data: data}) do
@@ -20,22 +21,29 @@ defmodule Fastimage.Parser do
     Parser.parse_jpeg(acc, next_data, chunk_size, :initial)
   end
 
+  def size(:webp, %Stream.Acc{acc_data: data}) do
+    Parser.parse_webp(data)
+  end
+
   @doc false
-  def type(bytes, %Stream.Acc{stream_ref: stream_ref} = acc) do
-    cond do
-      bytes == "BM" ->
+  def type(bytes, %Stream.Acc{acc_data: acc_data, stream_ref: stream_ref} = acc) do
+    case {bytes, acc_data} do
+      {"BM", _} ->
         {:ok, :bmp}
 
-      bytes == "GI" ->
+      {"GI", _} ->
         {:ok, :gif}
 
-      bytes == <<255, 216>> ->
+      {<<255, 216>>, _} ->
         {:ok, :jpeg}
 
-      bytes == <<137>> <> "P" ->
+      {<<137, 80>>, _} ->
         {:ok, :png}
 
-      true ->
+      {"RI", <<_::binary-size(8), "WEBP", _rest::binary>>} ->
+        {:ok, :webp}
+
+      _ ->
         Utils.close_stream(stream_ref)
         {:error, Error.exception({:unsupported, acc})}
     end
@@ -43,10 +51,7 @@ defmodule Fastimage.Parser do
 
   @doc false
   def parse_jpeg(
-        %Stream.Acc{
-          num_chunks_to_fetch: num_chunks_to_fetch,
-          acc_num_chunks: acc_num_chunks
-        } = acc,
+        %Stream.Acc{acc_num_chunks: acc_num_chunks} = acc,
         next_data,
         chunk_size,
         state
@@ -207,6 +212,47 @@ defmodule Fastimage.Parser do
           <<height::native-unsigned-integer-size(16), _rest::binary>> = rest
           %{width: width, height: height}
       end
+
+    {:ok, %Dimensions{width: width, height: height}}
+  end
+
+  @doc false
+  def parse_webp(
+        <<_::binary-size(12), type::binary-size(4), _len::binary-size(4), data::binary>>
+      ) do
+    case type do
+      "VP8 " -> parse_webp_vp8(data)
+      "VP8L" -> parse_webp_vp8l(data)
+      "VP8X" -> parse_webp_vp8x(data)
+      other -> {:error, "unknown webp format: #{other}"}
+    end
+  end
+
+  defp parse_webp_vp8(
+         <<_::binary-size(6), w::little-unsigned-integer-size(16),
+           h::little-unsigned-integer-size(16), _rest::binary>>
+       ) do
+    width = w &&& 16383
+    height = h &&& 16383
+    {:ok, %Dimensions{width: width, height: height}}
+  end
+
+  defp parse_webp_vp8l(
+         <<_::binary-size(1), a::integer-size(8), b::integer-size(8), c::integer-size(8),
+           d::integer-size(8), _rest::binary>>
+       ) do
+    width = 1 + ((b &&& 63) <<< 8 ||| a)
+    height = 1 + ((d &&& 15) <<< 10 ||| c <<< 2 ||| (b &&& 192) >>> 6)
+
+    {:ok, %Dimensions{width: width, height: height}}
+  end
+
+  defp parse_webp_vp8x(
+         <<_flags::binary-size(4), a::integer-size(8), b::integer-size(8), c::integer-size(8),
+           d::integer-size(8), e::integer-size(8), f::integer-size(8), _rest::binary>>
+       ) do
+    width = 1 + a + (b <<< 8) + (c <<< 16)
+    height = 1 + d + (e <<< 8) + (f <<< 16)
 
     {:ok, %Dimensions{width: width, height: height}}
   end
