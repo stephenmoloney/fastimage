@@ -185,17 +185,18 @@ defmodule FastimageTest do
     |> Enum.take(n)
   end
 
+  # order should match list/1
   defp list_expected_results(n) do
     Stream.cycle([
-      %Fastimage.Dimensions{width: 283, height: 142},
+      @expected_size,
       %Fastimage.Dimensions{width: 40, height: 40},
       %Fastimage.Dimensions{width: 1200, height: 1230},
-      %Fastimage.Dimensions{width: 283, height: 142},
-      %Fastimage.Dimensions{width: 283, height: 142},
-      %Fastimage.Dimensions{width: 283, height: 142},
-      %Fastimage.Dimensions{width: 550, height: 368},
-      %Fastimage.Dimensions{width: 386, height: 395},
-      %Fastimage.Dimensions{width: 386, height: 395}
+      @expected_size,
+      @expected_size,
+      @expected_size,
+      @webp_vp8_expected_size,
+      @webp_vp8l_expected_size,
+      @webp_vp8x_expected_size
     ])
     |> Stream.flat_map(&[{:ok, &1}])
     |> Enum.take(n)
