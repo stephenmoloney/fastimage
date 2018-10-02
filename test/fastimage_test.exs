@@ -9,15 +9,16 @@ defmodule FastimageTest do
 
   @fastimage_task_timeout 3_000
 
-  @jpg_url "https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg"
+  @gh_raw_url "https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/"
+  @jpg_url "#{@gh_raw_url}test.jpg"
   @jpg_url_with_query "https://avatars0.githubusercontent.com/u/12668653?v=2&s=40"
   @jpg_with_redirect "http://seanmoloney.com/images/cover1.jpg"
-  @png_url "https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.png"
-  @gif_url "https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.gif"
-  @bmp_url "https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.bmp"
-  @webp_vp8l_url "https://raw.githubusercontent.com/sdsykes/fastimage/master/test/fixtures/webp_vp8l.webp"
-  @webp_vp8_url "https://raw.githubusercontent.com/sdsykes/fastimage/master/test/fixtures/webp_vp8.webp"
-  @webp_vp8x_url "https://raw.githubusercontent.com/sdsykes/fastimage/master/test/fixtures/webp_vp8x.webp"
+  @png_url "#{@gh_raw_url}test.png"
+  @gif_url "#{@gh_raw_url}test.gif"
+  @bmp_url "#{@gh_raw_url}test.bmp"
+  @webp_vp8l_url "#{@gh_raw_url}webp_vp8l.webp"
+  @webp_vp8_url "#{@gh_raw_url}webp_vp8.webp"
+  @webp_vp8x_url "#{@gh_raw_url}webp_vp8x.webp"
 
   @jpg_file "./priv/test.jpg"
   @png_file "./priv/test.png"
