@@ -48,234 +48,88 @@ defmodule FastimageTest do
   end
 
   test "Get type and size of remote image with query in url" do
-    actual_type = Fastimage.type(@jpg_url_with_query)
-    expected_type = {:ok, :jpeg}
-
-    actual_size = Fastimage.size(@jpg_url_with_query)
-    expected_size = {:ok, %Fastimage.Dimensions{width: 40, height: 40}}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
+    expected_size = %Fastimage.Dimensions{width: 40, height: 40}
+    assert_size_and_type(@jpg_url_with_query, expected_size, :jpeg)
   end
 
   test "Get type and size of local jpeg file" do
-    actual_type = Fastimage.type(@jpg_file)
-    actual_size = Fastimage.size(@jpg_file)
-
-    expected_type = {:ok, :jpeg}
-    expected_size = {:ok, @expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
+    assert_size_and_type(@jpg_file, @expected_size, :jpeg)
   end
 
   test "Get type and size of a binary jpeg object" do
-    actual_type = Fastimage.type(@jpg_binary)
-    actual_size = Fastimage.size(@jpg_binary)
-
-    expected_type = {:ok, :jpeg}
-    expected_size = {:ok, @expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
+    assert_size_and_type(@jpg_binary, @expected_size, :jpeg)
   end
 
   test "Get type and size of remote png url" do
-    actual_type = Fastimage.type(@png_url)
-    actual_size = Fastimage.size(@png_url)
-
-    expected_type = {:ok, :png}
-    expected_size = {:ok, @expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
+    assert_size_and_type(@png_url, @expected_size, :png)
   end
 
   test "Get type and size of local png file" do
-    actual_type = Fastimage.type(@png_file)
-    actual_size = Fastimage.size(@png_file)
-
-    expected_type = {:ok, :png}
-    expected_size = {:ok, @expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
+    assert_size_and_type(@png_file, @expected_size, :png)
   end
 
   test "Get type and size of binary png object" do
-    actual_type = Fastimage.type(@png_binary)
-    actual_size = Fastimage.size(@png_binary)
-
-    expected_type = {:ok, :png}
-    expected_size = {:ok, @expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
+    assert_size_and_type(@png_binary, @expected_size, :png)
   end
 
   test "Get type and size of remote gif url" do
-    actual_type = Fastimage.type(@gif_url)
-    actual_size = Fastimage.size(@gif_url)
-
-    expected_type = {:ok, :gif}
-    expected_size = {:ok, @expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
+    assert_size_and_type(@gif_url, @expected_size, :gif)
   end
 
   test "Get type and size of local gif file" do
-    actual_type = Fastimage.type(@gif_file)
-    actual_size = Fastimage.size(@gif_file)
-
-    expected_type = {:ok, :gif}
-    expected_size = {:ok, @expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
+    assert_size_and_type(@gif_file, @expected_size, :gif)
   end
 
   test "Get type and size of a binary gif object" do
-    actual_type = Fastimage.type(@gif_binary)
-    actual_size = Fastimage.size(@gif_binary)
-
-    expected_type = {:ok, :gif}
-    expected_size = {:ok, @expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
+    assert_size_and_type(@gif_binary, @expected_size, :gif)
   end
 
   test "Get type and size of remote bmp url" do
-    actual_type = Fastimage.type(@bmp_url)
-    actual_size = Fastimage.size(@bmp_url)
-
-    expected_type = {:ok, :bmp}
-    expected_size = {:ok, @expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
+    assert_size_and_type(@bmp_url, @expected_size, :bmp)
   end
 
   test "Get type and size of local bmp file" do
-    actual_type = Fastimage.type(@bmp_file)
-    actual_size = Fastimage.size(@bmp_file)
-
-    expected_type = {:ok, :bmp}
-    expected_size = {:ok, @expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
+    assert_size_and_type(@bmp_file, @expected_size, :bmp)
   end
 
   test "Get type and size of a binary bmp object" do
-    actual_type = Fastimage.type(@bmp_binary)
-    actual_size = Fastimage.size(@bmp_binary)
-
-    expected_type = {:ok, :bmp}
-    expected_size = {:ok, @expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
+    assert_size_and_type(@bmp_binary, @expected_size, :bmp)
   end
 
   test "Get type and size of remote webp vp8 url" do
-    actual_type = Fastimage.type(@webp_vp8_url)
-    actual_size = Fastimage.size(@webp_vp8_url)
-
-    expected_type = {:ok, :webp}
-    expected_size = {:ok, @webp_vp8_expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
+    assert_size_and_type(@webp_vp8_url, @webp_vp8_expected_size, :webp)
   end
 
   test "Get type and size of local webp vp8 file" do
-    actual_type = Fastimage.type(@webp_vp8_file)
-    actual_size = Fastimage.size(@webp_vp8_file)
-
-    expected_type = {:ok, :webp}
-    expected_size = {:ok, @webp_vp8_expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
+    assert_size_and_type(@webp_vp8_file, @webp_vp8_expected_size, :webp)
   end
 
   test "Get type and size of a binary webp vp8 object" do
-    actual_type = Fastimage.type(@webp_vp8_binary)
-    actual_size = Fastimage.size(@webp_vp8_binary)
-
-    expected_type = {:ok, :webp}
-    expected_size = {:ok, @webp_vp8_expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
+    assert_size_and_type(@webp_vp8_binary, @webp_vp8_expected_size, :webp)
   end
 
   test "Get type and size of remote webp vp8l url" do
-    actual_type = Fastimage.type(@webp_vp8l_url)
-    actual_size = Fastimage.size(@webp_vp8l_url)
-
-    expected_type = {:ok, :webp}
-    expected_size = {:ok, @webp_vp8l_expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
+    assert_size_and_type(@webp_vp8l_url, @webp_vp8l_expected_size, :webp)
   end
 
   test "Get type and size of local webp vp8l file" do
-    actual_type = Fastimage.type(@webp_vp8l_file)
-    actual_size = Fastimage.size(@webp_vp8l_file)
-
-    expected_type = {:ok, :webp}
-    expected_size = {:ok, @webp_vp8l_expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
+    assert_size_and_type(@webp_vp8l_file, @webp_vp8l_expected_size, :webp)
   end
 
   test "Get type and size of a binary webp vp8l object" do
-    actual_type = Fastimage.type(@webp_vp8l_binary)
-    actual_size = Fastimage.size(@webp_vp8l_binary)
-
-    expected_type = {:ok, :webp}
-    expected_size = {:ok, @webp_vp8l_expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
+    assert_size_and_type(@webp_vp8l_binary, @webp_vp8l_expected_size, :webp)
   end
 
   test "Get type and size of remote webp vp8x url" do
-    actual_type = Fastimage.type(@webp_vp8x_url)
-    actual_size = Fastimage.size(@webp_vp8x_url)
-
-    expected_type = {:ok, :webp}
-    expected_size = {:ok, @webp_vp8x_expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
+    assert_size_and_type(@webp_vp8x_url, @webp_vp8x_expected_size, :webp)
   end
 
   test "Get type and size of local webp vp8x file" do
-    actual_type = Fastimage.type(@webp_vp8x_file)
-    actual_size = Fastimage.size(@webp_vp8x_file)
-
-    expected_type = {:ok, :webp}
-    expected_size = {:ok, @webp_vp8x_expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
+    assert_size_and_type(@webp_vp8x_file, @webp_vp8x_expected_size, :webp)
   end
 
   test "Get type and size of a binary webp vp8x object" do
-    actual_type = Fastimage.type(@webp_vp8x_binary)
-    actual_size = Fastimage.size(@webp_vp8x_binary)
-
-    expected_type = {:ok, :webp}
-    expected_size = {:ok, @webp_vp8x_expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
+    assert_size_and_type(@webp_vp8x_binary, @webp_vp8x_expected_size, :webp)
   end
 
   test "Get the size of multiple image files synchronously" do
@@ -307,6 +161,14 @@ defmodule FastimageTest do
   end
 
   # private
+
+  defp assert_size_and_type(input, expected_size, expected_type) do
+    actual_type = Fastimage.type(input)
+    actual_size = Fastimage.size(input)
+
+    assert actual_type == {:ok, expected_type}
+    assert actual_size == {:ok, expected_size}
+  end
 
   defp list(n) do
     Stream.cycle([
