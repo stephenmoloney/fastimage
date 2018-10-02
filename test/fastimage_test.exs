@@ -3,9 +3,6 @@ defmodule FastimageTest do
   doctest Fastimage
 
   @expected_size %Fastimage.Dimensions{width: 283, height: 142}
-  @webp_vp8_expected_size %Fastimage.Dimensions{width: 550, height: 368}
-  @webp_vp8x_expected_size %Fastimage.Dimensions{width: 386, height: 395}
-  @webp_vp8l_expected_size %Fastimage.Dimensions{width: 386, height: 395}
 
   @fastimage_task_timeout 3_000
 
@@ -98,39 +95,39 @@ defmodule FastimageTest do
   end
 
   test "Get type and size of remote webp vp8 url" do
-    assert_size_and_type(@webp_vp8_url, @webp_vp8_expected_size, :webp)
+    assert_size_and_type(@webp_vp8_url, @expected_size, :webp)
   end
 
   test "Get type and size of local webp vp8 file" do
-    assert_size_and_type(@webp_vp8_file, @webp_vp8_expected_size, :webp)
+    assert_size_and_type(@webp_vp8_file, @expected_size, :webp)
   end
 
   test "Get type and size of a binary webp vp8 object" do
-    assert_size_and_type(@webp_vp8_binary, @webp_vp8_expected_size, :webp)
+    assert_size_and_type(@webp_vp8_binary, @expected_size, :webp)
   end
 
   test "Get type and size of remote webp vp8l url" do
-    assert_size_and_type(@webp_vp8l_url, @webp_vp8l_expected_size, :webp)
+    assert_size_and_type(@webp_vp8l_url, @expected_size, :webp)
   end
 
   test "Get type and size of local webp vp8l file" do
-    assert_size_and_type(@webp_vp8l_file, @webp_vp8l_expected_size, :webp)
+    assert_size_and_type(@webp_vp8l_file, @expected_size, :webp)
   end
 
   test "Get type and size of a binary webp vp8l object" do
-    assert_size_and_type(@webp_vp8l_binary, @webp_vp8l_expected_size, :webp)
+    assert_size_and_type(@webp_vp8l_binary, @expected_size, :webp)
   end
 
   test "Get type and size of remote webp vp8x url" do
-    assert_size_and_type(@webp_vp8x_url, @webp_vp8x_expected_size, :webp)
+    assert_size_and_type(@webp_vp8x_url, @expected_size, :webp)
   end
 
   test "Get type and size of local webp vp8x file" do
-    assert_size_and_type(@webp_vp8x_file, @webp_vp8x_expected_size, :webp)
+    assert_size_and_type(@webp_vp8x_file, @expected_size, :webp)
   end
 
   test "Get type and size of a binary webp vp8x object" do
-    assert_size_and_type(@webp_vp8x_binary, @webp_vp8x_expected_size, :webp)
+    assert_size_and_type(@webp_vp8x_binary, @expected_size, :webp)
   end
 
   test "Get the size of multiple image files synchronously" do
@@ -166,6 +163,7 @@ defmodule FastimageTest do
   # private
 
   defp assert_size_and_type(input, expected_size, expected_type) do
+    IO.inspect(input)
     actual_type = Fastimage.type(input)
     actual_size = Fastimage.size(input)
 
@@ -198,9 +196,9 @@ defmodule FastimageTest do
       @expected_size,
       @expected_size,
       @expected_size,
-      @webp_vp8_expected_size,
-      @webp_vp8l_expected_size,
-      @webp_vp8x_expected_size
+      @expected_size,
+      @expected_size,
+      @expected_size
     ]
     |> Stream.cycle()
     |> Stream.flat_map(&[{:ok, &1}])
