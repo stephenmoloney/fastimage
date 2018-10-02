@@ -10,6 +10,9 @@ defmodule FastimageBench do
   @png_file "./priv/test.png"
   @gif_file "./priv/test.gif"
   @bmp_file "./priv/test.bmp"
+  @webp_vp8_file "./priv/test_vp8.webp"
+  @webp_vp8l_file "./priv/test_vp8l.webp"
+  @webp_vp8x_file "./priv/test_vp8x.webp"
 
 
   setup_all do
@@ -48,5 +51,15 @@ defmodule FastimageBench do
     Fastimage.size(@bmp_file)
   end
 
+
+  bench "Get size of local web vp8 file" do
+    Fastimage.size(@webp_vp8_file)
+  end
+  bench "Get size of local web vp8l file" do
+    Fastimage.size(@webp_vp8l_file)
+  end
+  bench "Get size of local web vp8x file" do
+    Fastimage.size(@webp_vp8x_file)
+  end
 
 end
