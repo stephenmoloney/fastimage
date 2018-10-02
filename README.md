@@ -8,14 +8,14 @@ file size for very large images.
 
 ## Features
 
-- Supports `bmp`, `jpeg`, `png` and `gif` files
+- Supports `bmp`, `jpeg`, `png`, `webp` and `gif` files
 - Supports local files by using the file path of the image
 - Supports blobs/objects by using the binary of the image
 - Supports remote files by using the url of the image
 - Follows redirects for a given url
 - `Fastimage.info/1` yields the image info as a struct `%Fastimage{}`
 - `Fastimage.size/1` yields the image size as a struct `%Fastimage.Dimensions{width: _w, height: _h}`
-- `Fastimage.type/1` yields the image type as an atom `:bmp, :jpeg, :gif or :png`
+- `Fastimage.type/1` yields the image type as an atom `:bmp, :jpeg, :gif, :webp or :png`
 
 ## Examples
 

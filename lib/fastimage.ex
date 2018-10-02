@@ -5,11 +5,37 @@ defmodule Fastimage do
   binary itself respectively.
 
   It streams the smallest amount of data necessary to ascertain the file size.
+
+  Supports ".bmp", ".gif", ".jpeg", ".webp" or ".png" image types only.
   """
   alias __MODULE__
   alias Fastimage.{Dimensions, Error, Parser, Stream, Utils}
 
-  @type image_type :: :bmp | :gif | :jpeg | :png
+  @typedoc """
+    * `:stream_timeout` - Applies to a url only.
+    An override for the after `:stream_timeout` field
+    in the `Fastimage.Stream.Acc` struct which in turn determines the timeout in the
+    processing of the hackney stream. By default the @default_stream_timeout
+    is used in `Fastimage.Stream.Acc`.
+
+    * `:max_error_retries` - Applies to a url only.
+    An override for the `:max_error_retries` field
+    in the `Fastimage.Stream.Acc` struct which in turn determines the maximum number
+    of retries that will be attempted before giving up and returning an error.
+    By default the @default_max_error_retries is used in `Fastimage.Stream.Acc`.
+
+    * `:max_redirect_retries` - Applies to a url only.
+    An override for the `:max_redirect_retries` field
+    in the `Fastimage.Stream.Acc` struct which in turn determines the maximum number
+    of redirects that will be attempted before giving up and returning an error.
+    By default the @default_max_redirect_retries is used in `Fastimage.Stream.Acc`.
+  """
+  @type fastimage_opts :: [
+          stream_timeout: non_neg_integer,
+          max_error_retries: non_neg_integer,
+          max_error_retries: non_neg_integer
+        ]
+  @type image_type :: :bmp | :gif | :jpeg | :png | :webp
   @type source_type :: :url | :file | :binary
 
   defstruct source: nil,
@@ -28,35 +54,13 @@ defmodule Fastimage do
   Returns the type of image. Accepts a source as a url, binary
   object or file path.
 
-  Supports ".bmp", ".gif", ".jpeg" or ".png" image types only.
-
-  ## Options
-
-    * `:stream_timeout` - Applies to a url only.
-    An override for the after `:stream_timeout` field
-    in the `Fastimage.Stream.Acc` struct which in turn determines the timeout in the
-    processing of the hackney stream. By default the @default_stream_timeout
-    is used in `Fastimage.Stream.Acc`.
-
-    * `:max_error_retries` - Applies to a url only.
-    An override for the `:max_error_retries` field
-    in the `Fastimage.Stream.Acc` struct which in turn determines the maximum number
-    of retries that will be attempted before giving up and returning an error.
-    By default the @default_max_error_retries is used in `Fastimage.Stream.Acc`.
-
-    * `:max_redirect_retries` - Applies to a url only.
-    An override for the `:max_redirect_retries` field
-    in the `Fastimage.Stream.Acc` struct which in turn determines the maximum number
-    of redirects that will be attempted before giving up and returning an error.
-    By default the @default_max_redirect_retries is used in `Fastimage.Stream.Acc`.
-
   ## Example
 
       iex> Fastimage.type("https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg")
       {:ok, :jpeg}
 
   """
-  @spec type(binary()) :: {:ok, image_type()} | {:error, Error.t()}
+  @spec type(binary(), fastimage_opts()) :: {:ok, image_type()} | {:error, Error.t()}
   def type(source, opts \\ []) when is_binary(source) do
     case Utils.get_source_type(source) do
       :other ->
@@ -75,17 +79,13 @@ defmodule Fastimage do
   Returns the type of image. Accepts a source as a url, binary
   object or file path.
 
-  Supports ".bmp", ".gif", ".jpeg" or ".png" image types only.
-
-  ## Options - see `type/1`
-
   ## Example
 
       iex> Fastimage.type!("https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg")
       :jpeg
 
   """
-  @spec type!(binary()) :: image_type() | no_return()
+  @spec type!(binary(), fastimage_opts()) :: image_type() | no_return()
   def type!(source, opts \\ []) when is_binary(source) do
     case type(source, opts) do
       {:ok, type} -> type
@@ -99,28 +99,6 @@ defmodule Fastimage do
   type and dimensions. Accepts a source as a url, binary
   object or file path.
 
-  Supports ".bmp", ".gif", ".jpeg" or ".png" image types only.
-
-  ## Options
-
-    * `:stream_timeout` - Applies to a url only.
-    An override for the after `:stream_timeout` field
-    in the `Fastimage.Stream.Acc` struct which in turn determines the timeout in the
-    processing of the hackney stream. By default the @default_stream_timeout
-    is used in `Fastimage.Stream.Acc`.
-
-    * `:max_error_retries` - Applies to a url only.
-    An override for the `:max_error_retries` field
-    in the `Fastimage.Stream.Acc` struct which in turn determines the maximum number
-    of retries that will be attempted before giving up and returning an error.
-    By default the @default_max_error_retries is used in `Fastimage.Stream.Acc`.
-
-    * `:max_redirect_retries` - Applies to a url only.
-    An override for the `:max_redirect_retries` field
-    in the `Fastimage.Stream.Acc` struct which in turn determines the maximum number
-    of redirects that will be attempted before giving up and returning an error.
-    By default the @default_max_redirect_retries is used in `Fastimage.Stream.Acc`.
-
   ## Example
 
       iex> Fastimage.info("https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg")
@@ -133,7 +111,7 @@ defmodule Fastimage do
         }}
 
   """
-  @spec info(binary()) :: {:ok, Fastimage.t()} | {:error, Error.t()}
+  @spec info(binary(), fastimage_opts()) :: {:ok, Fastimage.t()} | {:error, Error.t()}
   def info(source, opts \\ []) when is_binary(source) do
     case Utils.get_source_type(source) do
       :other ->
@@ -149,10 +127,6 @@ defmodule Fastimage do
   type and dimensions. Accepts a source as a url, binary
   object or file path.
 
-  Supports ".bmp", ".gif", ".jpeg" or ".png" image types only.
-
-  ## Options - see `info/1`
-
   ## Example
 
       iex> Fastimage.info!("https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg")
@@ -164,7 +138,7 @@ defmodule Fastimage do
       }
 
   """
-  @spec info!(binary()) :: Fastimage.t() | no_return()
+  @spec info!(binary(), fastimage_opts()) :: Fastimage.t() | no_return()
   def info!(source, opts \\ []) when is_binary(source) do
     case info(source, opts) do
       {:ok, info} -> info
@@ -177,35 +151,13 @@ defmodule Fastimage do
   Returns the dimensions of the image. Accepts a source as a url, binary
   object or file path.
 
-  Supports ".bmp", ".gif", ".jpeg" or ".png" image types only.
-
-  ## Options
-
-    * `:stream_timeout` - Applies to a url only.
-    An override for the after `:stream_timeout` field
-    in the `Fastimage.Stream.Acc` struct which in turn determines the timeout in the
-    processing of the hackney stream. By default the @default_stream_timeout
-    is used in `Fastimage.Stream.Acc`.
-
-    * `:max_error_retries` - Applies to a url only.
-    An override for the `:max_error_retries` field
-    in the `Fastimage.Stream.Acc` struct which in turn determines the maximum number
-    of retries that will be attempted before giving up and returning an error.
-    By default the @default_max_error_retries is used in `Fastimage.Stream.Acc`.
-
-    * `:max_redirect_retries` - Applies to a url only.
-    An override for the `:max_redirect_retries` field
-    in the `Fastimage.Stream.Acc` struct which in turn determines the maximum number
-    of redirects that will be attempted before giving up and returning an error.
-    By default the @default_max_redirect_retries is used in `Fastimage.Stream.Acc`.
-
   ## Example
 
       iex> Fastimage.size("https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg")
       {:ok, %Fastimage.Dimensions{height: 142, width: 283}}
 
   """
-  @spec size(binary()) :: {:ok, Dimensions.t()} | {:error, Error.t()}
+  @spec size(binary(), fastimage_opts()) :: {:ok, Dimensions.t()} | {:error, Error.t()}
   def size(source, opts \\ []) when is_binary(source) do
     with {:ok, %Fastimage{dimensions: %Fastimage.Dimensions{} = dimensions}} <- info(source, opts) do
       {:ok, dimensions}
@@ -216,16 +168,12 @@ defmodule Fastimage do
   Returns the dimensions of the image. Accepts a source as a url, binary
   object or file path.
 
-  Supports ".bmp", ".gif", ".jpeg" or ".png" image types only.
-
-  ## Options - see `size/1`
-
   ## Example
 
       iex> Fastimage.size!("https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg")
       %Fastimage.Dimensions{height: 142, width: 283}
   """
-  @spec size!(binary()) :: Dimensions.t() | no_return()
+  @spec size!(binary(), fastimage_opts()) :: Dimensions.t() | no_return()
   def size!(source, opts \\ []) when is_binary(source) do
     case size(source, opts) do
       {:ok, dimensions} -> dimensions

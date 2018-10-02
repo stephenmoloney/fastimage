@@ -163,7 +163,6 @@ defmodule FastimageTest do
   # private
 
   defp assert_size_and_type(input, expected_size, expected_type) do
-    IO.inspect(input)
     actual_type = Fastimage.type(input)
     actual_size = Fastimage.size(input)
 
