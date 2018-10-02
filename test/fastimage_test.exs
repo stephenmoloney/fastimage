@@ -136,7 +136,8 @@ defmodule FastimageTest do
     n = :rand.uniform(20)
 
     list_results =
-      list(n)
+      n
+      |> list()
       |> Enum.map(fn image -> {:ok, Kernel.elem(Fastimage.size(image), 1)} end)
 
     assert list_results == list_expected_results(n)
@@ -146,7 +147,8 @@ defmodule FastimageTest do
     n = :rand.uniform(20)
 
     list_results =
-      list(n)
+      n
+      |> list()
       |> Enum.map(&Task.async(Fastimage, :size, [&1]))
       |> Enum.map(&handle_task/1)
 
@@ -171,7 +173,7 @@ defmodule FastimageTest do
   end
 
   defp list(n) do
-    Stream.cycle([
+    [
       @jpg_url,
       @jpg_url_with_query,
       @jpg_with_redirect,
@@ -181,13 +183,14 @@ defmodule FastimageTest do
       @webp_vp8_url,
       @webp_vp8x_url,
       @webp_vp8l_url
-    ])
+    ]
+    |> Stream.cycle()
     |> Enum.take(n)
   end
 
   # order should match list/1
   defp list_expected_results(n) do
-    Stream.cycle([
+    [
       @expected_size,
       %Fastimage.Dimensions{width: 40, height: 40},
       %Fastimage.Dimensions{width: 1200, height: 1230},
@@ -197,7 +200,8 @@ defmodule FastimageTest do
       @webp_vp8_expected_size,
       @webp_vp8l_expected_size,
       @webp_vp8x_expected_size
-    ])
+    ]
+    |> Stream.cycle()
     |> Stream.flat_map(&[{:ok, &1}])
     |> Enum.take(n)
   end

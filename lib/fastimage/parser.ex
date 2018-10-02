@@ -217,9 +217,7 @@ defmodule Fastimage.Parser do
   end
 
   @doc false
-  def parse_webp(
-        <<_::binary-size(12), type::binary-size(4), _len::binary-size(4), data::binary>>
-      ) do
+  def parse_webp(<<_::binary-size(12), type::binary-size(4), _len::binary-size(4), data::binary>>) do
     case type do
       "VP8 " -> parse_webp_vp8(data)
       "VP8L" -> parse_webp_vp8l(data)
@@ -232,8 +230,8 @@ defmodule Fastimage.Parser do
          <<_::binary-size(6), w::little-unsigned-integer-size(16),
            h::little-unsigned-integer-size(16), _rest::binary>>
        ) do
-    width = w &&& 16383
-    height = h &&& 16383
+    width = w &&& 16_383
+    height = h &&& 16_383
     {:ok, %Dimensions{width: width, height: height}}
   end
 
