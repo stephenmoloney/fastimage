@@ -17,15 +17,21 @@ matrix:
     - otp_release: 20.2
       elixir: 1.5.3
 
-    - otp_release: 20.2
-      elixir: 1.6.1
+    - otp_release: 19.3
+      elixir: 1.6.6
+    - otp_release: 20.3
+      elixir: 1.6.6
+
+    - otp_release: 20.3
+      elixir: 1.7.3
+    - otp_release: 21.1
+      elixir: 1.7.3
 
 script:
   - mix do deps.compile, compile
   - >
-    if [[ "${TRAVIS_ELIXIR_VERSION}" == "1.6.1" ]]; then
-      mix format mix.exs lib/**/*.{ex,exs} --check-formatted && \
-      mix format mix.exs test/**/*.{ex,exs} --check-formatted
+    if [[ "$(echo "${TRAVIS_ELIXIR_VERSION:0:3}>=1.6" | bc)" == "1" ]]; then
+      mix format --check-formatted
     fi;
   - mix credo --strict --ignore maxlinelength,cyclomaticcomplexity,todo
   - mix coveralls.travis

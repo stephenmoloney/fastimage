@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.0.0-rc3
+
+[features]
+
+- support for webp images
+
+[changes]
+
+- Reducing some code repitition in the tests
+- Add some test images for webp
+- Benchmarks updated for webp inclusion
+
+Thanks to [@sneako, https://github.com/sneako] for your contribution.
+
 ## v1.0.0-rc2
 
 [changes]
