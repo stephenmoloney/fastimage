@@ -4,183 +4,21 @@ defmodule FastimageTest do
 
   @expected_size %Fastimage.Dimensions{width: 283, height: 142}
   @fastimage_task_timeout 3_000
-
-  @jpg_url "https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg"
   @jpg_url_with_query "https://avatars0.githubusercontent.com/u/12668653?v=2&s=40"
   @jpg_with_redirect "http://seanmoloney.com/images/cover1.jpg"
-  @png_url "https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.png"
-  @gif_url "https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.gif"
-  @bmp_url "https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.bmp"
+  @gh_raw_url "https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv"
 
-  @jpg_file "./priv/test.jpg"
-  @png_file "./priv/test.png"
-  @gif_file "./priv/test.gif"
-  @bmp_file "./priv/test.bmp"
-
-  @jpg_binary File.read!("./priv/test.jpg")
-  @png_binary File.read!("./priv/test.png")
-  @gif_binary File.read!("./priv/test.gif")
-  @bmp_binary File.read!("./priv/test.bmp")
-
-  @tag :jpeg
-  test "Get type and size of remote jpeg url" do
-    actual_type = Fastimage.type(@jpg_url)
-    actual_size = Fastimage.size(@jpg_url)
-
-    expected_type = {:ok, :jpeg}
-    expected_size = {:ok, @expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
+  test "Get type and size of jpeg images" do
+    for type <- ~w(file url binary)a do
+      type
+      |> image_fixture("test.jpg")
+      |> assert_size_and_type(@expected_size, :jpeg)
+    end
   end
 
   test "Get type and size of remote image with query in url" do
-    actual_type = Fastimage.type(@jpg_url_with_query)
-    expected_type = {:ok, :jpeg}
-
-    actual_size = Fastimage.size(@jpg_url_with_query)
-    expected_size = {:ok, %Fastimage.Dimensions{width: 40, height: 40}}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
-  end
-
-  test "Get type and size of local jpeg file" do
-    actual_type = Fastimage.type(@jpg_file)
-    actual_size = Fastimage.size(@jpg_file)
-
-    expected_type = {:ok, :jpeg}
-    expected_size = {:ok, @expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
-  end
-
-  test "Get type and size of a binary jpeg object" do
-    actual_type = Fastimage.type(@jpg_binary)
-    actual_size = Fastimage.size(@jpg_binary)
-
-    expected_type = {:ok, :jpeg}
-    expected_size = {:ok, @expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
-  end
-
-  test "Get type and size of remote png url" do
-    actual_type = Fastimage.type(@png_url)
-    actual_size = Fastimage.size(@png_url)
-
-    expected_type = {:ok, :png}
-    expected_size = {:ok, @expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
-  end
-
-  test "Get type and size of local png file" do
-    actual_type = Fastimage.type(@png_file)
-    actual_size = Fastimage.size(@png_file)
-
-    expected_type = {:ok, :png}
-    expected_size = {:ok, @expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
-  end
-
-  test "Get type and size of binary png object" do
-    actual_type = Fastimage.type(@png_binary)
-    actual_size = Fastimage.size(@png_binary)
-
-    expected_type = {:ok, :png}
-    expected_size = {:ok, @expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
-  end
-
-  test "Get type and size of remote gif url" do
-    actual_type = Fastimage.type(@gif_url)
-    actual_size = Fastimage.size(@gif_url)
-
-    expected_type = {:ok, :gif}
-    expected_size = {:ok, @expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
-  end
-
-  test "Get type and size of local gif file" do
-    actual_type = Fastimage.type(@gif_file)
-    actual_size = Fastimage.size(@gif_file)
-
-    expected_type = {:ok, :gif}
-    expected_size = {:ok, @expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
-  end
-
-  test "Get type and size of a binary gif object" do
-    actual_type = Fastimage.type(@gif_binary)
-    actual_size = Fastimage.size(@gif_binary)
-
-    expected_type = {:ok, :gif}
-    expected_size = {:ok, @expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
-  end
-
-  test "Get type and size of remote bmp url" do
-    actual_type = Fastimage.type(@bmp_url)
-    actual_size = Fastimage.size(@bmp_url)
-
-    expected_type = {:ok, :bmp}
-    expected_size = {:ok, @expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
-  end
-
-  test "Get type and size of local bmp file" do
-    actual_type = Fastimage.type(@bmp_file)
-    actual_size = Fastimage.size(@bmp_file)
-
-    expected_type = {:ok, :bmp}
-    expected_size = {:ok, @expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
-  end
-
-  test "Get type and size of a binary bmp object" do
-    actual_type = Fastimage.type(@bmp_binary)
-    actual_size = Fastimage.size(@bmp_binary)
-
-    expected_type = {:ok, :bmp}
-    expected_size = {:ok, @expected_size}
-
-    assert(actual_type == expected_type)
-    assert(actual_size == expected_size)
-  end
-
-  test "Get the size of multiple image files synchronously" do
-    list_results =
-      list()
-      |> Enum.map(fn image -> Kernel.elem(Fastimage.size(image), 1) end)
-
-    assert(list_results, list_expected_results())
-  end
-
-  test "Get the size of multiple image files asynchronously" do
-    list_results =
-      list()
-      |> Enum.map(&Task.async(Fastimage, :size, [&1]))
-      |> Enum.map(&handle_task/1)
-
-    assert(list_results, list_expected_results())
+    expected_size = %Fastimage.Dimensions{width: 40, height: 40}
+    assert_size_and_type(@jpg_url_with_query, expected_size, :jpeg)
   end
 
   test "Get the size of an image behind a redirect" do
@@ -190,34 +28,119 @@ defmodule FastimageTest do
     assert(actual_size == expected_size)
   end
 
-  # private
-
-  defp list do
-    Enum.reduce(1..10, [], fn _i, acc ->
-      Enum.concat(acc, [
-        @jpg_url,
-        @jpg_url_with_query,
-        @jpg_with_redirect,
-        @png_url,
-        @gif_url,
-        @bmp_url
-      ])
-    end)
+  test "Get type and size of png images" do
+    for type <- ~w(file url binary)a do
+      type
+      |> image_fixture("test.png")
+      |> assert_size_and_type(@expected_size, :png)
+    end
   end
 
-  defp list_expected_results do
-    result = [
-      %Fastimage.Dimensions{width: 283, height: 142},
+  test "Get type and size of gif images" do
+    for type <- ~w(file url binary)a do
+      type
+      |> image_fixture("test.gif")
+      |> assert_size_and_type(@expected_size, :gif)
+    end
+  end
+
+  test "Get type and size of bmp images" do
+    for type <- ~w(file url binary)a do
+      type
+      |> image_fixture("test.bmp")
+      |> assert_size_and_type(@expected_size, :bmp)
+    end
+  end
+
+  test "Get type and size of webp lossy images" do
+    for type <- ~w(file url binary)a do
+      type
+      |> image_fixture("test_lossy.webp")
+      |> assert_size_and_type(@expected_size, :webp)
+    end
+  end
+
+  test "Get type and size of webp lossless images" do
+    for type <- ~w(file url binary)a do
+      type
+      |> image_fixture("test_lossless.webp")
+      |> assert_size_and_type(@expected_size, :webp)
+    end
+  end
+
+  test "Get type and size of webp extended images" do
+    for type <- ~w(file url binary)a do
+      type
+      |> image_fixture("test_extended.webp")
+      |> assert_size_and_type(@expected_size, :webp)
+    end
+  end
+
+  test "Get the size of multiple image urls synchronously" do
+    n = :rand.uniform(20)
+
+    list_results =
+      n
+      |> list()
+      |> Enum.map(fn image -> {:ok, Kernel.elem(Fastimage.size(image), 1)} end)
+
+    assert list_results == list_expected_results(n)
+  end
+
+  test "Get the size of multiple image urls asynchronously" do
+    n = :rand.uniform(20)
+
+    list_results =
+      n
+      |> list()
+      |> Enum.map(&Task.async(Fastimage, :size, [&1]))
+      |> Enum.map(&handle_task/1)
+
+    assert list_results == list_expected_results(n)
+  end
+
+  # private
+
+  defp assert_size_and_type(input, expected_size, expected_type) do
+    actual_type = Fastimage.type(input)
+    actual_size = Fastimage.size(input)
+
+    assert actual_type == {:ok, expected_type}
+    assert actual_size == {:ok, expected_size}
+  end
+
+  defp list(n) do
+    [
+      image_fixture(:url, "test.jpg"),
+      @jpg_url_with_query,
+      @jpg_with_redirect,
+      image_fixture(:url, "test.png"),
+      image_fixture(:url, "test.gif"),
+      image_fixture(:url, "test.bmp"),
+      image_fixture(:url, "test_lossy.webp"),
+      image_fixture(:url, "test_extended.webp"),
+      image_fixture(:url, "test_lossless.webp")
+    ]
+    |> Stream.cycle()
+    |> Enum.take(n)
+  end
+
+  # order should match list/1
+  defp list_expected_results(n) do
+    [
+      @expected_size,
       %Fastimage.Dimensions{width: 40, height: 40},
       %Fastimage.Dimensions{width: 1200, height: 1230},
-      %Fastimage.Dimensions{width: 283, height: 142},
-      %Fastimage.Dimensions{width: 283, height: 142},
-      %Fastimage.Dimensions{width: 283, height: 142}
+      @expected_size,
+      @expected_size,
+      @expected_size,
+      @expected_size,
+      @expected_size,
+      @expected_size
     ]
-
-    Enum.reduce(1..10, [], fn _i, acc ->
-      Enum.concat(acc, result)
-    end)
+    |> Stream.cycle()
+    |> Stream.flat_map(&[{:ok, &1}])
+    |> Enum.take(n)
   end
 
   defp handle_task(task) do
@@ -231,5 +154,17 @@ defmodule FastimageTest do
       other ->
         other
     end
+  end
+
+  defp image_fixture(:url, name) do
+    "#{@gh_raw_url}/#{name}"
+  end
+
+  defp image_fixture(:file, name) do
+    "./priv/#{name}"
+  end
+
+  defp image_fixture(:binary, name) do
+    File.read!("./priv/#{name}")
   end
 end
