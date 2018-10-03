@@ -29,26 +29,14 @@ Fastimage.info("https://raw.githubusercontent.com/stephenmoloney/fastimage/maste
 #        source_type: :url
 #      }}
 
-Fastimage.info!("https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg")
-# => %Fastimage{
-#       dimensions: %Fastimage.Dimensions{height: 142, width: 283},
-#       image_type: :jpeg,
-#       source: "https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg",
-#       source_type: :url
-#     }
-
 Fastimage.type("https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg")
 # => {:ok, :jpeg}
 
-Fastimage.type!("https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg")
-# => :jpeg
-
 Fastimage.size("https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg")
 # => {:ok, %Fastimage.Dimensions{height: 142, width: 283}}
-
-Fastimage.size!("https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg")
-# => %Fastimage.Dimensions{height: 142, width: 283}
 ```
+
+See [docs](https://hex.pm/packages/fastimage) for further examples
 
 ## Installation
 
@@ -57,7 +45,7 @@ Add fastimage to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:fastimage, "~> 1.0.0-rc2"}
+    {:fastimage, "~> 1.0.0-rc3"}
   ]
 end
 ```
@@ -68,11 +56,17 @@ end
 mix test
 ```
 
+## Benchmarks
+
+```elixir
+mix bench
+```
+
 ## Credit/Acknowledgements
 
 - Based on [Ruby Fastimage](https://github.com/sdsykes/fastimage) by [Stephen Sykes](https://github.com/sdsykes)
 - Influenced by a [PHP version of fastimage](https://github.com/tommoor/fastimage) by [Tom Moor](https://github.com/tommoor)
-
+- Thanks to all [contributors](https://github.com/stephenmoloney/fastimage/graphs/contributors)
 
 ## Licence
 
