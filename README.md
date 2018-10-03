@@ -1,4 +1,6 @@
-# Fastimage [![Hex Version](http://img.shields.io/hexpm/v/fastimage.svg?style=flat-square)](https://hex.pm/packages/fastimage) [![Hex docs](http://img.shields.io/badge/hex.pm-docs-green.svg?style=flat-square)](https://hexdocs.pm/fastimage) [![License](https://img.shields.io/hexpm/l/fastimage.svg?style=flat-square)](https://github.com/stephenmoloney/fastimage/blob/master/LICENSE.md) [![Build Status](https://travis-ci.org/stephenmoloney/fastimage.svg)](https://travis-ci.org/stephenmoloney/fastimage) [![Code coverage status](https://coveralls.io/repos/github/stephenmoloney/fastimage/badge.svg?branch=master)](https://coveralls.io/github/stephenmoloney/fastimage?branch=master)
+# Fastimage [![Hex Version](http://img.shields.io/hexpm/v/fastimage.svg?style=flat-square)](https://hex.pm/packages/fastimage) [![Hex docs](http://img.shields.io/badge/hex.pm-docs-green.svg?style=flat-square)](https://hexdocs.pm/fastimage) [![License](https://img.shields.io/hexpm/l/fastimage.svg?style=flat-square)](https://github.com/stephenmoloney/fastimage/blob/master/LICENSE.md) [![Build Status](https://travis-ci.org/stephenmoloney/fastimage.svg)](https://travis-ci.org/stephenmoloney/fastimage) [![Code coverage status](https://coveralls.io/repos/github/stephenmoloney/fastimage/badge.svg?branch=master)](https://coveralls.io/github/stephenmoloney/fastimage?branch=master) 
+![Hex.pm](https://img.shields.io/hexpm/dt/fastimage.svg) 
+
 
 ## Description
 
