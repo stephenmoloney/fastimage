@@ -33,7 +33,7 @@ defmodule Fastimage do
   @type fastimage_opts :: [
           stream_timeout: non_neg_integer,
           max_error_retries: non_neg_integer,
-          max_error_retries: non_neg_integer
+          max_redirect_retries: non_neg_integer
         ]
   @type image_type :: :bmp | :gif | :jpeg | :png | :webp
   @type source_type :: :url | :file | :binary

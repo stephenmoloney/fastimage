@@ -226,6 +226,7 @@ defmodule Fastimage.Parser do
     end
   end
 
+  # Ref https://developers.google.com/speed/webp/docs/riff_container#simple_file_format_lossy
   defp parse_webp_vp8(
          <<_::binary-size(6), w::little-unsigned-integer-size(16),
            h::little-unsigned-integer-size(16), _rest::binary>>
@@ -235,6 +236,7 @@ defmodule Fastimage.Parser do
     {:ok, %Dimensions{width: width, height: height}}
   end
 
+  # Ref https://developers.google.com/speed/webp/docs/riff_container#simple_file_format_lossless
   defp parse_webp_vp8l(
          <<_::binary-size(1), a::integer-size(8), b::integer-size(8), c::integer-size(8),
            d::integer-size(8), _rest::binary>>
@@ -245,6 +247,7 @@ defmodule Fastimage.Parser do
     {:ok, %Dimensions{width: width, height: height}}
   end
 
+  # Ref https://developers.google.com/speed/webp/docs/riff_container#extended_file_format
   defp parse_webp_vp8x(
          <<_flags::binary-size(4), a::integer-size(8), b::integer-size(8), c::integer-size(8),
            d::integer-size(8), e::integer-size(8), f::integer-size(8), _rest::binary>>
