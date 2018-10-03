@@ -1,4 +1,6 @@
-# Fastimage [![Hex Version](http://img.shields.io/hexpm/v/fastimage.svg?style=flat-square)](https://hex.pm/packages/fastimage) [![Hex docs](http://img.shields.io/badge/hex.pm-docs-green.svg?style=flat-square)](https://hexdocs.pm/fastimage) [![License](https://img.shields.io/hexpm/l/fastimage.svg?style=flat-square)](https://github.com/stephenmoloney/fastimage/blob/master/LICENSE.md) [![Build Status](https://travis-ci.org/stephenmoloney/fastimage.svg)](https://travis-ci.org/stephenmoloney/fastimage) [![Code coverage status](https://coveralls.io/repos/github/stephenmoloney/fastimage/badge.svg?branch=master)](https://coveralls.io/github/stephenmoloney/fastimage?branch=master)
+# Fastimage [![Hex Version](http://img.shields.io/hexpm/v/fastimage.svg?style=flat-square)](https://hex.pm/packages/fastimage) [![Hex docs](http://img.shields.io/badge/hex.pm-docs-green.svg?style=flat-square)](https://hexdocs.pm/fastimage) [![License](https://img.shields.io/hexpm/l/fastimage.svg?style=flat-square)](https://github.com/stephenmoloney/fastimage/blob/master/LICENSE.md) [![Build Status](https://travis-ci.org/stephenmoloney/fastimage.svg)](https://travis-ci.org/stephenmoloney/fastimage) [![Code coverage status](https://coveralls.io/repos/github/stephenmoloney/fastimage/badge.svg?branch=master)](https://coveralls.io/github/stephenmoloney/fastimage?branch=master) 
+![Hex.pm](https://img.shields.io/hexpm/dt/fastimage.svg) 
+
 
 ## Description
 
@@ -29,26 +31,14 @@ Fastimage.info("https://raw.githubusercontent.com/stephenmoloney/fastimage/maste
 #        source_type: :url
 #      }}
 
-Fastimage.info!("https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg")
-# => %Fastimage{
-#       dimensions: %Fastimage.Dimensions{height: 142, width: 283},
-#       image_type: :jpeg,
-#       source: "https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg",
-#       source_type: :url
-#     }
-
 Fastimage.type("https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg")
 # => {:ok, :jpeg}
 
-Fastimage.type!("https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg")
-# => :jpeg
-
 Fastimage.size("https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg")
 # => {:ok, %Fastimage.Dimensions{height: 142, width: 283}}
-
-Fastimage.size!("https://raw.githubusercontent.com/stephenmoloney/fastimage/master/priv/test.jpg")
-# => %Fastimage.Dimensions{height: 142, width: 283}
 ```
+
+See [docs](https://hex.pm/packages/fastimage) for further examples
 
 ## Installation
 
@@ -57,7 +47,7 @@ Add fastimage to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:fastimage, "~> 1.0.0-rc2"}
+    {:fastimage, "~> 1.0.0-rc3"}
   ]
 end
 ```
@@ -68,11 +58,17 @@ end
 mix test
 ```
 
+## Benchmarks
+
+```elixir
+mix bench
+```
+
 ## Credit/Acknowledgements
 
 - Based on [Ruby Fastimage](https://github.com/sdsykes/fastimage) by [Stephen Sykes](https://github.com/sdsykes)
 - Influenced by a [PHP version of fastimage](https://github.com/tommoor/fastimage) by [Tom Moor](https://github.com/tommoor)
-
+- Thanks to all [contributors](https://github.com/stephenmoloney/fastimage/graphs/contributors)
 
 ## Licence
 

@@ -1,11 +1,11 @@
 defmodule Fastimage.Mixfile do
   use Mix.Project
   @name "Fastimage"
-  @version "1.0.0-rc2"
+  @version "1.0.0-rc3"
   @source "https://github.com/stephenmoloney/fastimage"
   @maintainers ["Stephen Moloney"]
   @elixir_versions ">= 1.4.0"
-  @allowed_hackney_versions ~w|1.6.0 1.7.0 1.8.0 1.9.0|
+  @allowed_hackney_versions ~w(1.6 1.7 1.8 1.9 1.13 1.14)
   @hackney_versions "~> " <> Enum.join(@allowed_hackney_versions, " or ~> ")
 
   def project do
@@ -40,11 +40,11 @@ defmodule Fastimage.Mixfile do
       {:hackney, @hackney_versions},
 
       # dev/test only
-      {:excoveralls, "~> 0.8.0", only: [:test], runtime: false},
+      {:excoveralls, "~> 0.10", only: [:test], runtime: false},
       {:benchfella, "~> 0.3", only: [:dev], runtime: false},
-      {:credo, "~> 0.9.0-rc6", only: [:dev, :test], runtime: false},
+      {:credo, "~> 0.10", only: [:dev, :test], runtime: false},
       {:earmark, "~> 1.2", only: [:dev], runtime: false},
-      {:ex_doc, "~> 0.18", only: [:dev], runtime: false}
+      {:ex_doc, "~> 0.19", only: [:dev], runtime: false}
     ]
   end
 
@@ -72,26 +72,12 @@ defmodule Fastimage.Mixfile do
 
   defp aliases do
     [
-      prep: [
-        "clean",
-        "format #{format_args(:lib)}",
-        "format #{format_args(:test)}",
-        "compile",
-        "credo #{credo_args()}"
-      ]
+      prep: ["clean", "format", "compile", "credo #{credo_args()}"]
     ]
   end
 
   defp credo_args do
     "--strict --ignore maxlinelength,cyclomaticcomplexity,todo"
-  end
-
-  defp format_args(:lib) do
-    "mix.exs lib/**/*.{ex,exs}"
-  end
-
-  defp format_args(:test) do
-    "mix.exs test/**/*.{ex,exs}"
   end
 
   def coveralls do
