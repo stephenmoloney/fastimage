@@ -62,16 +62,18 @@ defmodule Fastimage do
   """
   @spec type(binary(), fastimage_opts()) :: {:ok, image_type()} | {:error, Error.t()}
   def type(source, opts \\ []) when is_binary(source) do
-    case Utils.get_source_type(source) do
+    with source_type when source_type != :other <- Utils.get_source_type(source) do
+      case get_acc_with_type(source, source_type, opts) do
+        {:ok, %Stream.Acc{image_type: type, stream_ref: stream_ref}} ->
+          Utils.close_stream(stream_ref)
+          {:ok, type}
+
+        {:error, reason} ->
+          {:error, reason}
+      end
+    else
       :other ->
         {:error, %Error{reason: :invalid_input}}
-
-      source_type ->
-        {:ok, %Stream.Acc{image_type: type, stream_ref: stream_ref}} =
-          get_acc_with_type(source, source_type, opts)
-
-        Utils.close_stream(stream_ref)
-        {:ok, type}
     end
   end
 
