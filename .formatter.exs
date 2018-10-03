@@ -1,4 +1,4 @@
 [
-    inputs: ["mix.exs", "{config,lib,test,priv}/**/*.{ex,exs}"]
+    inputs: ["mix.exs", "{config,lib,bench,test,priv}/**/*.{ex,exs}"]
 ]
 
