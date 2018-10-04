@@ -76,6 +76,10 @@ defmodule FastimageTest do
     end
   end
 
+  test "403 on remote file request returns error tuple" do
+    assert {:error, %Fastimage.Error{}} = Fastimage.type("https://httpbin.org/status/403")
+  end
+
   test "Get the size of multiple image urls synchronously" do
     n = :rand.uniform(20)
 
@@ -97,10 +101,6 @@ defmodule FastimageTest do
       |> Enum.map(&handle_task/1)
 
     assert list_results == list_expected_results(n)
-  end
-
-  test "403 on remote file request returns error tuple" do
-    assert {:error, %Fastimage.Error{}} = Fastimage.type("http://httpstat.us/403")
   end
 
   # private
