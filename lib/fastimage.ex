@@ -202,6 +202,9 @@ defmodule Fastimage do
     else
       {:error, {:closed, :timeout}} = reason ->
         Error.exception(reason)
+
+      {:error, %Error{} = error} ->
+        {:error, error}
     end
   end
 

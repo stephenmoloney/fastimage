@@ -163,6 +163,13 @@ defmodule Fastimage.Stream do
         | stream_ref: stream_ref,
           stream_state: :processing
       })
+    else
+      {:error, {:closed, :timeout}} ->
+        reason = {:connection_closed_after_stream_timeout, acc}
+        {:error, Error.exception(reason)}
+
+      other ->
+        other
     end
   end
 

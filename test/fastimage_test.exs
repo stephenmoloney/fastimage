@@ -103,10 +103,6 @@ defmodule FastimageTest do
     assert list_results == list_expected_results(n)
   end
 
-  test "403 on remote file request returns error tuple" do
-    assert {:error, %Fastimage.Error{}} = Fastimage.type("http://httpstat.us/403")
-  end
-
   # private
 
   defp assert_size_and_type(input, expected_size, expected_type) do
