@@ -233,6 +233,7 @@ defmodule Fastimage.Parser do
        ) do
     width = w &&& 16_383
     height = h &&& 16_383
+
     {:ok, %Dimensions{width: width, height: height}}
   end
 
