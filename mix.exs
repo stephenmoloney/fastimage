@@ -1,7 +1,7 @@
 defmodule Fastimage.Mixfile do
   use Mix.Project
   @name "Fastimage"
-  @version "1.0.0-rc3"
+  @version "1.0.0-rc4"
   @source "https://github.com/stephenmoloney/fastimage"
   @maintainers ["Stephen Moloney"]
   @elixir_versions ">= 1.4.0"
