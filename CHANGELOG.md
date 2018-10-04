@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.0.0-rc4
+
+[fixes]
+
+- convert test_extended.webp to and actual extended file
+- Changes to error handling for timeouts `{:error, {:closed, :timeout}}`
+and closed streams
+
 ## v1.0.0-rc3
 
 [features]

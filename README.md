@@ -48,7 +48,7 @@ Add fastimage to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:fastimage, "~> 1.0.0-rc3"}
+    {:fastimage, "~> 1.0.0-rc4"}
   ]
 end
 ```
