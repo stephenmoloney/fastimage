@@ -1,13 +1,14 @@
 defmodule Fastimage.Utils do
   @moduledoc false
+  alias Fastimage.Error
 
   @doc false
   def get_source_type(source) do
     cond do
-      is_file?(source) -> :file
-      is_url?(source) -> :url
-      is_binary(source) -> :binary
-      true -> :other
+      is_file?(source) -> {:ok, :file}
+      is_url?(source) -> {:ok, :url}
+      is_binary(source) -> {:ok, :binary}
+      true -> {:error, %Error{reason: :invalid_input}}
     end
   end
 

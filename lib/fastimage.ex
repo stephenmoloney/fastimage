@@ -62,18 +62,11 @@ defmodule Fastimage do
   """
   @spec type(binary(), fastimage_opts()) :: {:ok, image_type()} | {:error, Error.t()}
   def type(source, opts \\ []) when is_binary(source) do
-    with source_type when source_type != :other <- Utils.get_source_type(source) do
-      case get_acc_with_type(source, source_type, opts) do
-        {:ok, %Stream.Acc{image_type: type, stream_ref: stream_ref}} ->
-          Utils.close_stream(stream_ref)
-          {:ok, type}
-
-        {:error, reason} ->
-          {:error, reason}
-      end
-    else
-      :other ->
-        {:error, %Error{reason: :invalid_input}}
+    with {:ok, source_type} <- Utils.get_source_type(source),
+         {:ok, %Stream.Acc{image_type: type, stream_ref: stream_ref}} <-
+           get_acc_with_type(source, source_type, opts) do
+      Utils.close_stream(stream_ref)
+      {:ok, type}
     end
   end
 
@@ -115,12 +108,8 @@ defmodule Fastimage do
   """
   @spec info(binary(), fastimage_opts()) :: {:ok, Fastimage.t()} | {:error, Error.t()}
   def info(source, opts \\ []) when is_binary(source) do
-    case Utils.get_source_type(source) do
-      :other ->
-        {:error, %Error{reason: :invalid_input}}
-
-      source_type ->
-        info(source, source_type, opts)
+    with {:ok, source_type} <- Utils.get_source_type(source) do
+      info(source, source_type, opts)
     end
   end
 
@@ -210,6 +199,9 @@ defmodule Fastimage do
          bytes <- :erlang.binary_part(updated_acc.acc_data, {0, 2}),
          {:ok, image_type} <- Parser.type(bytes, updated_acc) do
       {:ok, %{updated_acc | image_type: image_type}}
+    else
+      {:error, {:closed, :timeout}} = reason ->
+        Error.exception(reason)
     end
   end
 
