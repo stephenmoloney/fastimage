@@ -203,13 +203,13 @@ defmodule Fastimage.Parser do
         40 ->
           part = :erlang.binary_part(new_bytes, {4, :erlang.byte_size(new_bytes) - 5})
           <<width::little-unsigned-integer-size(32), rest::binary>> = part
-          <<height::little-unsigned-integer-size(32), _rest::binary>> = rest
+          <<height::little-signed-integer-size(32), _rest::binary>> = rest
           %{width: width, height: height}
 
         _ ->
           part = :erlang.binary_part(new_bytes, {4, 8})
           <<width::native-unsigned-integer-size(16), rest::binary>> = part
-          <<height::native-unsigned-integer-size(16), _rest::binary>> = rest
+          <<height::native-signed-integer-size(16), _rest::binary>> = rest
           %{width: width, height: height}
       end
 
