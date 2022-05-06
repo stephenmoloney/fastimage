@@ -197,19 +197,17 @@ defmodule Fastimage.Parser do
   def parse_bmp(data) do
     new_bytes = :erlang.binary_part(data, {14, 14})
     <<char::8, _rest::binary>> = new_bytes
-
     %{width: width, height: height} =
-      case char do
-        40 ->
+      if char >= 40 do
           part = :erlang.binary_part(new_bytes, {4, :erlang.byte_size(new_bytes) - 5})
           <<width::little-unsigned-integer-size(32), rest::binary>> = part
-          <<height::little-unsigned-integer-size(32), _rest::binary>> = rest
+          <<height::little-signed-integer-size(32), _rest::binary>> = rest
           %{width: width, height: height}
 
-        _ ->
+      else
           part = :erlang.binary_part(new_bytes, {4, 8})
           <<width::native-unsigned-integer-size(16), rest::binary>> = part
-          <<height::native-unsigned-integer-size(16), _rest::binary>> = rest
+          <<height::native-signed-integer-size(16), _rest::binary>> = rest
           %{width: width, height: height}
       end
 
